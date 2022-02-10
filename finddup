@@ -1,0 +1,242 @@
+#!/usr/bin/env perl
+
+use strict;
+use Digest::CRC;
+use File::Find;
+use Getopt::Std;
+use File::Spec::Functions;
+use Sort::Key::Natural 'natsort';
+# use Text::Glob 'match_glob';
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+our $VERSION = '1.0';
+our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_H, $opt_L, $opt_P, $opt_0);
+
+my @dir = ();
+my %files = ();
+my $n = "\n";
+my $digest;
+
+getopts('loORpfbtaHLP0');
+$opt_t = $opt_b = 1 unless $opt_t || $opt_b;
+$opt_p = $opt_f = 0 if $opt_p && $opt_f;
+$opt_H = $opt_L = 0 if $opt_P;
+$opt_H = 1 if $opt_L;
+
+for (@ARGV) {
+	next if -l && $opt_R && !$opt_H;
+	$_ = canonpath($_);
+	if (-f) {
+		my $t;
+		$t = -T _ unless $opt_t && $opt_b;
+		if (($t && $opt_t) || (!$t && $opt_b)) {
+			$digest = digest($_);
+			$files{$digest} = $_ if $digest;
+		}
+	}
+	elsif (-d _) {
+		push(@dir, $_);
+	}
+	else {
+		print STDERR "finddup: $_: No such file or directory\n";
+		exit 1;
+	}
+}
+if ($opt_0) {
+	$n = "\0";
+	$opt_o = 1 unless $opt_l;
+}
+my $all = !%files;
+$opt_o ||= (keys %files == 1) unless $opt_l;
+@dir = ('.') unless @dir;
+
+find({preprocess => sub {natsort(@_)}, wanted => sub {
+	my $t;
+	$File::Find::prune = 1 unless $opt_R || $_ eq '.';
+	return if !(-f) || (/^\.|\r$/ && !$opt_a) || (-l && !$opt_L);
+	$t = -T _ unless $opt_t && $opt_b;
+	return if ($t && !$opt_t) || (!$t && !$opt_b);
+	my $name = $File::Find::name =~ s/^\.\///r;
+	my $digest = digest($_) or return;
+	if ($files{$digest} && $files{$digest} ne $name) {
+		if ($opt_l) {
+			print "$name$n$files{$digest}$n";
+		}
+		elsif ($opt_O) {
+			print "$files{$digest}$n";
+		}
+		elsif ($opt_o) {
+			print "$name$n";
+		}
+		else {
+			print "$name ".($opt_f ? "~~" : "==")." $files{$digest}\n";
+		}
+	}
+	elsif ($all) {
+		$files{$digest} = $name;
+	}
+}, follow => $opt_L}, @dir);
+
+
+sub digest {
+	my ($file, $data, $digest, $hex, $s);
+	my $path = shift;
+	if (open($file, '<', $path)) {
+		my $size = -s $file;
+		if ($opt_f) {
+			$s = int($size/5);
+			for (1 .. 6) {
+				if ($_ == 6) {
+					seek($file, -4, 2);
+				}
+				elsif ($_ > 1) {
+					seek($file, $s, 1);
+				}
+				$hex .= (read($file, $data, 4) ? unpack('H*', $data) : 'x');
+			}
+		}
+		else {
+			$s = int($size/($opt_p ? 4 : 2));
+			my $d = Digest::CRC->new(type => ($opt_p ? 'crc64' : 'crc32'));
+			$d->addfile($file);
+			$digest = $d->hexdigest;
+			seek($file, $s, 0);
+			$hex = (read($file, $data, 2) ? unpack('H*', $data) : 'x');
+			if ($opt_p) {
+				for (1, 2) {
+					seek($file, $s, 1);
+					$hex .= (read($file, $data, 2) ? unpack('H*', $data) : 'x');
+				}
+			}
+		}
+		close $file;
+		return sprintf('%x', $size).$hex.$digest;
+	}
+	else {
+		print STDERR "finddup: $path: Permission denied\n";
+		return '';
+	}
+}
+
+sub HELP_MESSAGE {
+	print STDERR "Usage: finddup [-ra0] [-p | -f] [-b | -t] [-o | -O | -l] [FILE ...] [DIRECTORY ...]\n";
+}
+
+# Manual text
+
+#__END__
+#
+#=head1 NAME
+#
+#B<dtpldumpconv> - Dynatrace PureLytics Dump Convert
+#
+#=head1 SYNOPSIS
+#
+#dtpldumpconv [OPTIONS] [FILE ...]
+#
+#Without FILE arguments, input is read from STDIN.
+#
+#B<Options:>
+#
+#  -o, --offset=LINE  Start processing the input after LINE
+#  -O, --output=FILE  Write output to FILE instead of STDOUT
+#  -F, --format=FMT   Format output file names like FMT
+#  -p, --post=URL     Send output to URL as POST request
+#  -f, --force        Overwrite already existing files
+#  -l, --limit=MAX    Only process MAX lines in one cycle
+#  -L, --lines=MAX    Stop after processing MAX lines
+#      --crlf         Use DOS line endings
+#  -v, --verbose      Display more status information
+#  -q, --quiet        Don't display any information
+#      --             Every argument after this is a file name
+#      --help         Display this help and exit
+#      --man          Display the manual page and exit
+#      --version      Display version information and exit
+#
+#Mandatory arguments to long options are mandatory to short options too.
+#
+#=head1 OPTIONS
+#
+#=over 10
+#
+#=item B<-o>, B<--offset>=I<LINE>
+#
+#If the program was interrupted for some reason, you can use the line number that was displayed at the end
+#and use it as I<LINE>. The program will skip all lines until I<LINE> (inclusive).
+#
+#=item B<-O>, B<--output>=I<FILE>
+#
+#Write output to I<FILE> instead of STDOUT. If a B<--format> has been set, this file name will only be used
+#as a "template string". If you want to actually write to that file, either use output redirection or
+#pass an empty format string: B<-F0>
+#
+#=item B<-F>, B<--format>=I<FMT>
+#
+#Format to be used for sequential file naming (needed for file size limiting). The formatting function gets
+#3 parameters: File name, counter & file name extension (possibly empty). You can also use them as positional
+#parameters: "%2$d%3$s" (yields, e.g., "1.txt", "2.txt", etc. given B<--output=dump.txt>)
+#
+#See B<sprintf> for detailed formatting description.
+#
+#Default I<FMT>: %s-%04d%s
+#
+#=item B<-p>, B<--post>=I<URL>
+#
+#Send the converted data to I<URL> via HTTP POST. Has to be used in conjunction with B<--limit>! If you want
+#to suppress the output to the terminal, just redirect it to F</dev/null>.
+#
+#=item B<-f>, B<--force>
+#
+#Overwrite files that already exist. This only makes sense in conjunction with B<--output>. It also works
+#when B<--format> is set.
+#
+#=item B<-l>, B<--limit>=I<MAX>
+#
+#After I<MAX> lines, a new file will be opened (when B<--output> has been set) and/or the buffered data
+#will be sent via HTTP (when B<--post> has been set). It is highly recommended that I<MAX> is set to a
+#rather low value, otherwise the server might reject your requests.
+#
+#Default I<MAX>: 1024
+#
+#=item B<-L>, B<--lines>=I<MAX>
+#
+#Stop processing the input after I<MAX> lines. Makes sense when this program is called in a loop with
+#the related option B<--offset>.
+#
+#=item B<--crlf>
+#
+#Use DOS line endings (<CR><LF>) in the output instead of sensible ones (<LF>).
+#Might be necessary for stupid servers.
+#
+#=item B<-v>, B<--verbose>
+#
+#Display status messages of HTTP responses and which files are opened.
+#
+#=item B<-q>, B<--quiet>
+#
+#Only display the normal output (JSON data) and error messages.
+#
+#=item B<--help>
+#
+#Prints the synopsis of the manual page.
+#
+#=item B<--man>
+#
+#Prints the entire manual page.
+#
+#=item B<--version>
+#
+#Prints version information of the program and of Perl.
+#
+#=back
+#
+#=head1 DESCRIPTION
+#
+#B<dtpldumpconv> reads huge JSON files and converts the data to the new Elastic Search format. The new JSON
+#objects (one per line) can be written to a file and/or sent to a server that offers a REST interface.
+#
+#Processing the input files can be started at a line offset and can be limited to avoid big output files
+#and HTTP requests.
+#
+#=cut
+#
