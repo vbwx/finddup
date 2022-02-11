@@ -52,8 +52,10 @@ $opt_o ||= (keys %files == 1) unless $opt_l;
 
 find({preprocess => sub {natsort(@_)}, wanted => sub {
 	my $t;
-	$File::Find::prune = 1 unless $opt_R || $_ eq '.';
-	return if !(-f) || (/^\.|\r$/ && !$opt_a) || (-l && !$opt_L);
+	if (!(-f) || (/^[.~]|\r$|^Thumbs\.db$/ && !$opt_a) || (-l && !$opt_L)) {
+		$File::Find::prune = 1 unless $opt_R || $_ eq '.';
+		return;
+	}
 	$t = -T _ unless $opt_t && $opt_b;
 	return if ($t && !$opt_t) || (!$t && !$opt_b);
 	my $name = $File::Find::name =~ s/^\.\///r;
