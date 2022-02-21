@@ -121,5 +121,5 @@ sub digest {
 }
 
 sub HELP_MESSAGE {
-	print STDERR "Usage: finddup [-Ra0] [-p | -f] [-b | -t] [-o | -O | -l] [FILE ...] [DIRECTORY ...]\n";
+	print STDERR "Usage: finddup [-Ra0] [-p | -f] [-b | -t] [-o | -O | -l] [-L | -H | -P] [FILE ...] [DIR ...]\n";
 }
