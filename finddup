@@ -10,14 +10,14 @@ use Sort::Key::Natural 'natsort';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 our $VERSION = '1.0';
-our ($opt_l, $opt_R, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_H, $opt_L, $opt_P, $opt_0, $opt_1, $opt_2);
+our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_H, $opt_L, $opt_P, $opt_0);
 
 my @dir = ();
 my %files = ();
 my $n = "\n";
 my $digest;
 
-getopts('lRpfbtaHLP012');
+getopts('loORpfbtaHLP0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
@@ -44,9 +44,10 @@ for (@ARGV) {
 }
 if ($opt_0) {
 	$n = "\0";
+	$opt_o = 1 unless $opt_l;
 }
 my $all = !%files;
-$opt_1 ||= (keys %files == 1) unless $opt_l;
+$opt_o ||= (keys %files == 1) unless $opt_l;
 @dir = ('.') unless @dir;
 
 find({preprocess => sub {natsort(@_)}, wanted => sub {
@@ -63,10 +64,10 @@ find({preprocess => sub {natsort(@_)}, wanted => sub {
 		if ($opt_l) {
 			print "$name$n$files{$digest}$n";
 		}
-		elsif ($opt_2) {
+		elsif ($opt_O) {
 			print "$files{$digest}$n";
 		}
-		elsif ($opt_1) {
+		elsif ($opt_o) {
 			print "$name$n";
 		}
 		else {
@@ -120,5 +121,5 @@ sub digest {
 }
 
 sub HELP_MESSAGE {
-	print STDERR "Usage: finddup [-Ra0] [-p | -f] [-b | -t] [-1 | -2 | -l] [-L | -H | -P] [FILE ...] [DIR ...]\n";
+	print STDERR "Usage: finddup [-Ra0] [-p | -f] [-b | -t] [-o | -O | -l] [-L | -H | -P] [FILE ...] [DIR ...]\n";
 }
