@@ -18,6 +18,7 @@ my %files = ();
 my %names = ();
 my $n = "\n";
 my $digest;
+my $found = 0;
 
 getopts('loORpfbtanNHLP0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
@@ -81,12 +82,17 @@ find({preprocess => sub {natsort(@_)}, wanted => sub {
 		else {
 			print "$name ".($opt_f ? "~~" : "==")." $files{$digest}\n";
 		}
+		$found++;
 	}
 	elsif ($all) {
 		$files{$digest} = $name;
 		$names{basename($_)} = 1 if $opt_n;
 	}
 }, follow => $opt_L}, @dir);
+
+print "\n".($found || 'No').($opt_f && $found ? ' probable' : '').' duplicate'.($found == 1 ? '' : 's')."\n"
+	unless $opt_l || $opt_O || $opt_o;
+exit !$found;
 
 
 sub basename {
