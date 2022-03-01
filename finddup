@@ -11,7 +11,7 @@ use Sort::Key::Natural 'natsort';
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 our $VERSION = '1.0';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_N);
-our ($opt_H, $opt_L, $opt_P, $opt_0);
+our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_0);
 
 my @dir = ();
 my %files = ();
@@ -20,7 +20,7 @@ my $n = "\n";
 my $digest;
 my $found = 0;
 
-getopts('loORpfbtanNHLP0');
+getopts('loORqpfbtanNHLP0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
@@ -90,8 +90,8 @@ find({preprocess => sub {natsort(@_)}, wanted => sub {
 	}
 }, follow => $opt_L}, @dir);
 
-print "\n".($found || 'No').($opt_f && $found ? ' probable' : '').' duplicate'.($found == 1 ? '' : 's')."\n"
-	unless $opt_l || $opt_O || $opt_o;
+print STDERR "\n".($found || 'No').($opt_f && $found ? ' probable' : '').' duplicate'.($found == 1 ? '' : 's')."\n"
+	unless $opt_q;
 exit !$found;
 
 
@@ -135,14 +135,14 @@ sub digest {
 		return sprintf('%x', $size).$hex.$digest;
 	}
 	else {
-		print STDERR "finddup: $path: Permission denied\n";
+		print STDERR "finddup: $path: Permission denied\n" unless $opt_q;
 		return '';
 	}
 }
 
 sub HELP_MESSAGE {
 	print STDERR <<EOL;
-Usage: finddup [-Ra0] [-n | -N] [-p | -f] [-b | -t] [-o | -O | -l]
+Usage: finddup [-Raq0] [-n | -N] [-p | -f] [-b | -t] [-o | -O | -l]
                [-L | -H | -P] [FILE ...] [DIR ...]
 EOL
 }
