@@ -24,8 +24,8 @@ getopts('loORqpfbtanNHLP0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
-$opt_H = 1 if $opt_L;
-$opt_n = 1 if $opt_N;
+$opt_H ||= $opt_L;
+$opt_n ||= $opt_N;
 
 for (@ARGV) {
 	next if -l && $opt_R && !$opt_H;
@@ -90,8 +90,8 @@ find({preprocess => sub {natsort(@_)}, wanted => sub {
 	}
 }, follow => $opt_L}, @dir);
 
-print STDERR "\n".($found || 'No').($opt_f && $found ? ' probable' : '').' duplicate'.($found == 1 ? '' : 's')."\n"
-	unless $opt_q;
+print STDERR (($found ? "\n$found" : 'No'), ($opt_f && $found ? ' probable' : ''),
+	' duplicate', ($found == 1 ? '' : 's'), "\n") unless $opt_q;
 exit !$found;
 
 
