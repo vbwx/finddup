@@ -9,8 +9,8 @@ use Sort::Key::Natural 'natsort';
 # use Text::Glob 'match_glob';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.0';
-our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_N);
+our $VERSION = '1.1';
+our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_N);
 our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_0);
 
 my @dir = ();
@@ -20,7 +20,7 @@ my $n = "\n";
 my $digest;
 my $found = 0;
 
-getopts('loORqpfbtanNHLP0');
+getopts('loOrqpfbtanNHLP0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
@@ -28,7 +28,7 @@ $opt_H ||= $opt_L;
 $opt_n ||= $opt_N;
 
 for (@ARGV) {
-	next if -l && $opt_R && !$opt_H;
+	next if -l && $opt_r && !$opt_H;
 	$_ = canonpath($_);
 	if (-f) {
 		my $t;
@@ -60,7 +60,7 @@ $opt_o ||= (keys %files == 1) unless $opt_l;
 find({preprocess => sub {natsort(@_)}, wanted => sub {
 	my $t;
 	if (!(-f) || (/^[.~]|\r$|^Thumbs\.db$/ && !$opt_a) || (-l && !$opt_L)) {
-		$File::Find::prune = 1 unless $opt_R || $_ eq '.';
+		$File::Find::prune = 1 unless $opt_r || $_ eq '.';
 		return;
 	}
 	my $f = $opt_N ? $_ : lc $_;
@@ -142,7 +142,7 @@ sub digest {
 
 sub HELP_MESSAGE {
 	print STDERR <<EOL;
-Usage: finddup [-Raq0] [-n | -N] [-p | -f] [-b | -t] [-o | -O | -l]
+Usage: finddup [-raq0] [-n | -N] [-p | -f] [-b | -t] [-o | -O | -l]
                [-L | -H | -P] [FILE ...] [DIR ...]
 EOL
 }
