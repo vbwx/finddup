@@ -145,7 +145,52 @@ sub digest {
 
 sub HELP_MESSAGE {
 	print STDERR <<EOL;
-Usage: finddup [-raq0] [-n | -N] [-p | -f] [-b | -t] [-o | -O | -l]
-               [-L | -H | -P] [FILE ...] [DIR ...]
+Usage: finddup [-ainqr0] [-p | -f] [-b | -t] [-o | -O | -l]
+               [-L | -H | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
+
+Options:
+    -a   Compare all files, including hidden files, such as `Thumbs.db'
+         and `Icon?'.
+
+    -i   Ignore case when using `-n', `-I', or `-X'.
+
+    -n   Files are only duplicates when their names match as well.
+
+    -q   Do not print number of found duplicates.
+
+    -r   Look for files in subdirectories as well.
+
+    -0   Separate paths with NUL characters; useful for `xargs -0'.
+         Implies `-o' unless `-O' or `-l' is specified.
+
+    -p   Compare files with higher precision by using CRC64 instead of CRC32.
+
+    -f   Only compare file sizes and small samples of file contents instead
+         of checksums. This speeds up the process considerably.
+
+    -b   Only compare binary files.
+
+    -t   Only compare text files.
+
+    -o   Only print paths of files that are duplicates of other files.
+
+    -O   Only print paths of files that have at least one duplicate.
+         This switch might cause paths to be printed multiple times.
+
+    -l   Print paths of file and its duplicate on separate lines.
+
+    -L   Follow all symbolic links.
+
+    -P   Follow no symbolic links. This is the default.
+
+    -H   Follow symbolic links on the command line.
+
+    -I GLOB
+         Only compare files matching the pattern GLOB.
+         Directory names end with `/'.
+
+    -X GLOB
+         Do not compare files matching the pattern GLOB.
+         Directory names end with `/'.
 EOL
 }
