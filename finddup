@@ -6,12 +6,12 @@ use File::Find;
 use Getopt::Std;
 use File::Spec::Functions;
 use Sort::Key::Natural 'natsort';
-# use Text::Glob 'match_glob';
+use Text::Glob 'match_glob';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.1';
-our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_N);
-our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_0);
+our $VERSION = '1.2';
+our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_i);
+our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
 my @dir = ();
 my %files = ();
@@ -20,12 +20,15 @@ my $n = "\n";
 my $digest;
 my $found = 0;
 
-getopts('loOrqpfbtanNHLP0');
+getopts('loOrqpfbtaniHLPI:X:0');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
 $opt_H ||= $opt_L;
-$opt_n ||= $opt_N;
+if ($opt_i) {
+	$opt_I = lc $opt_I;
+	$opt_X = lc $opt_X;
+}
 
 for (@ARGV) {
 	next if -l && $opt_r && !$opt_H;
@@ -58,14 +61,14 @@ $opt_o ||= (keys %files == 1) unless $opt_l;
 @dir = ('.') unless @dir;
 
 find({preprocess => sub {natsort(@_)}, wanted => sub {
-	my $t;
-	if (!(-f) || (/^[.~]|\r$|^Thumbs\.db$/ && !$opt_a) || (-l && !$opt_L)) {
+	my $f = ($opt_i ? lc $_ : $_).(-d ? '/' : '');
+	if (!(-f) || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
+		($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
 		$File::Find::prune = 1 unless $opt_r || $_ eq '.';
 		return;
 	}
-	my $f = $opt_N ? $_ : lc $_;
 	return if $opt_n && !$names{$f};
-	$t = -T _ unless $opt_t && $opt_b;
+	my $t = -T _ unless $opt_t && $opt_b;
 	return if ($t && !$opt_t) || (!$t && !$opt_b);
 	my $name = $File::Find::name =~ s/^\.\///r;
 	my $digest = digest($_) or return;
@@ -97,7 +100,7 @@ exit !$found;
 
 sub basename {
 	my $f = substr($_[0], rindex($_[0], '/') + 1);
-	return ($opt_N ? $f : lc $f);
+	return ($opt_i ? lc $f : $f);
 }
 
 sub digest {
