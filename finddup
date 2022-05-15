@@ -173,8 +173,10 @@ Options:
     -t   Only compare text files.
 
     -o   Only print paths of files that are duplicates of other files.
+         This is equivalent to the left path in the default output mode.
 
     -O   Only print paths of files that have at least one duplicate.
+         This is equivalent to the right path in the default output mode.
          This switch might cause paths to be printed multiple times.
 
     -l   Print paths of file and its duplicate on separate lines.
