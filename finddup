@@ -187,10 +187,10 @@ Options:
 
     -I GLOB
          Only compare files matching the pattern GLOB.
-         Directory names end with `/'.
+         For pattern matching purposes, directory names end with `/'.
 
     -X GLOB
          Do not compare files matching the pattern GLOB.
-         Directory names end with `/'.
+         For pattern matching purposes, directory names end with `/'.
 EOL
 }
