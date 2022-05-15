@@ -146,7 +146,7 @@ sub digest {
 sub HELP_MESSAGE {
 	print STDERR <<EOL;
 Usage: finddup [-ainqr0] [-p | -f] [-b | -t] [-o | -O | -l]
-               [-L | -H | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
+               [-H | -L | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
 
 Options:
     -a   Compare all files, including hidden files, such as `Thumbs.db'
@@ -179,11 +179,11 @@ Options:
 
     -l   Print paths of file and its duplicate on separate lines.
 
+    -H   Follow symbolic links on the command line.
+
     -L   Follow all symbolic links.
 
-    -P   Follow no symbolic links. This is the default.
-
-    -H   Follow symbolic links on the command line.
+    -P   Do not follow symbolic links. This is the default.
 
     -I GLOB
          Only compare files matching the pattern GLOB.
