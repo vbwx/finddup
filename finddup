@@ -9,7 +9,7 @@ use Sort::Key::Natural 'natsort';
 use Text::Glob 'match_glob';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.2';
+our $VERSION = '1.2.1';
 our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_i);
 our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -17,10 +17,9 @@ my @dir = ();
 my %files = ();
 my %names = ();
 my $n = "\n";
-my $digest;
 my $found = 0;
 
-getopts('loOrqpfbtaniHLPI:X:0');
+getopts('loO0rqpfbtaniHLPI:X:');
 $opt_t = $opt_b = 1 unless $opt_t || $opt_b;
 $opt_p = $opt_f = 0 if $opt_p && $opt_f;
 $opt_H = $opt_L = 0 if $opt_P;
@@ -29,16 +28,24 @@ if ($opt_i) {
 	$opt_I = lc $opt_I;
 	$opt_X = lc $opt_X;
 }
+if ($opt_0) {
+	$n = "\0";
+	$opt_o = 1 unless $opt_l;
+}
 
 for (@ARGV) {
 	next if -l && $opt_r && !$opt_H;
 	$_ = canonpath($_);
 	if (-f) {
-		my $t;
-		$t = -T _ unless $opt_t && $opt_b;
-		if (($t && $opt_t) || (!$t && $opt_b)) {
-			$digest = digest($_);
-			if ($digest) {
+		my $t = -T _ unless $opt_t && $opt_b;
+		if ((!$t && $opt_b) || ($t && $opt_t)) {
+			my $digest = digest($_) or next;
+			if ($files{$digest} && $files{$digest} ne $_ &&
+				(!$opt_n || basename($_) eq basename($files{$digest}))) {
+				printdup($_, $files{$digest});
+				$found++;
+			}
+			else {
 				$files{$digest} = $_;
 				$names{basename($_)} = 1 if $opt_n;
 			}
@@ -52,13 +59,8 @@ for (@ARGV) {
 		exit 1;
 	}
 }
-if ($opt_0) {
-	$n = "\0";
-	$opt_o = 1 unless $opt_l;
-}
 my $all = !%files;
-$opt_o ||= (keys %files == 1) unless $opt_l;
-@dir = ('.') unless @dir;
+@dir = ('.') unless @dir || %files;
 
 find({preprocess => sub {natsort(@_)}, wanted => sub {
 	my $f = ($opt_i ? lc $_ : $_).(-d ? '/' : '');
@@ -67,24 +69,13 @@ find({preprocess => sub {natsort(@_)}, wanted => sub {
 		$File::Find::prune = 1 unless $opt_r || $_ eq '.';
 		return;
 	}
-	return if $opt_n && !$names{$f};
+	return if $opt_n && !$all && !$names{$f};
 	my $t = -T _ unless $opt_t && $opt_b;
-	return if ($t && !$opt_t) || (!$t && !$opt_b);
+	return if (!$t && !$opt_b) || ($t && !$opt_t);
 	my $name = $File::Find::name =~ s/^\.\///r;
 	my $digest = digest($_) or return;
 	if ($files{$digest} && $files{$digest} ne $name && (!$opt_n || $f eq basename($files{$digest}))) {
-		if ($opt_l) {
-			print "$name$n$files{$digest}$n";
-		}
-		elsif ($opt_O) {
-			print "$files{$digest}$n";
-		}
-		elsif ($opt_o) {
-			print "$name$n";
-		}
-		else {
-			print "$name ".($opt_f ? "~~" : "==")." $files{$digest}\n";
-		}
+		printdup($name, $files{$digest});
 		$found++;
 	}
 	elsif ($all) {
@@ -101,6 +92,21 @@ exit !$found;
 sub basename {
 	my $f = substr($_[0], rindex($_[0], '/') + 1);
 	return ($opt_i ? lc $f : $f);
+}
+
+sub printdup {
+	if ($opt_l) {
+		print "$_[0]$n$_[1]$n";
+	}
+	elsif ($opt_O) {
+		print "$_[1]$n";
+	}
+	elsif ($opt_o) {
+		print "$_[0]$n";
+	}
+	else {
+		print "$_[0] ".($opt_f ? "~~" : "==")." $_[1]\n";
+	}
 }
 
 sub digest {
