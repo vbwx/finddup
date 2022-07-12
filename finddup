@@ -150,55 +150,55 @@ sub digest {
 }
 
 sub HELP_MESSAGE {
-	print STDERR <<EOL;
+	print <<EOL;
 Usage: finddup [-ainqr0] [-p | -f] [-b | -t] [-o | -O | -l]
                [-H | -L | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
 
 Options:
-    -a   Compare all files, including hidden files, such as `Thumbs.db'
-         and `Icon?'.
+  -a   Compare all files, including hidden files, such as `Thumbs.db'
+       and `Icon?'.
 
-    -i   Ignore case when using `-n', `-I', or `-X'.
+  -i   Ignore case when using `-n', `-I', or `-X'.
 
-    -n   Files are only duplicates when their names match as well.
+  -n   Files are only duplicates when their names match as well.
 
-    -q   Do not print number of found duplicates.
+  -q   Do not print number of found duplicates.
 
-    -r   Look for files in subdirectories as well.
+  -r   Look for files in subdirectories as well.
 
-    -0   Separate paths with NUL characters; useful for `xargs -0'.
-         Implies `-o' unless `-O' or `-l' is specified.
+  -0   Separate paths with NUL characters; useful for `xargs -0'.
+       Implies `-o' unless `-O' or `-l' is specified.
 
-    -p   Compare files with higher precision by using CRC64 instead of CRC32.
+  -p   Compare files with higher precision by using CRC64 instead of CRC32.
 
-    -f   Only compare file sizes and small samples of file contents instead
-         of checksums. This speeds up the process considerably.
+  -f   Only compare file sizes and small samples of file contents instead
+       of checksums. This speeds up the process considerably.
 
-    -b   Only compare binary files.
+  -b   Only compare binary files.
 
-    -t   Only compare text files.
+  -t   Only compare text files.
 
-    -o   Only print paths of files that are duplicates of other files.
-         This is equivalent to the left path in the default output mode.
+  -o   Only print paths of files that are duplicates of other files.
+       This is equivalent to the left path in the default output mode.
 
-    -O   Only print paths of files that have at least one duplicate.
-         This is equivalent to the right path in the default output mode.
-         This switch might cause paths to be printed multiple times.
+  -O   Only print paths of files that have at least one duplicate.
+       This is equivalent to the right path in the default output mode.
+       This switch might cause paths to be printed multiple times.
 
-    -l   Print paths of file and its duplicate on separate lines.
+  -l   Print paths of file and its duplicate on separate lines.
 
-    -H   Follow symbolic links on the command line.
+  -H   Follow symbolic links on the command line.
 
-    -L   Follow all symbolic links.
+  -L   Follow all symbolic links.
 
-    -P   Do not follow symbolic links. This is the default.
+  -P   Do not follow symbolic links. This is the default.
 
-    -I GLOB
-         Only compare files matching the pattern GLOB.
-         For pattern matching purposes, directory names end with `/'.
+  -I GLOB
+       Only compare files matching the pattern GLOB.
+       For pattern matching purposes, directory names end with `/'.
 
-    -X GLOB
-         Do not compare files matching the pattern GLOB.
-         For pattern matching purposes, directory names end with `/'.
+  -X GLOB
+       Do not compare files matching the pattern GLOB.
+       For pattern matching purposes, directory names end with `/'.
 EOL
 }
