@@ -7,11 +7,12 @@ use Getopt::Std;
 use File::Spec::Functions;
 use Sort::Key::Natural 'natsort';
 use Text::Glob 'match_glob';
+use Fcntl ':seek';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.2.1';
-our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_b, $opt_t, $opt_a, $opt_n, $opt_i);
-our ($opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
+our $VERSION = '1.3';
+our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_c, $opt_B, $opt_T, $opt_a, $opt_n, $opt_i);
+our ($opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
 my @dir = ();
 my %files = ();
@@ -19,30 +20,49 @@ my %names = ();
 my $n = "\n";
 my $found = 0;
 
-getopts('loO0rqpfbtaniHLPI:X:');
-$opt_t = $opt_b = 1 unless $opt_t || $opt_b;
-$opt_p = $opt_f = 0 if $opt_p && $opt_f;
+getopts('loOsS0rqpfcBTaneiHLPI:X:');
+if ($opt_l + $opt_o + $opt_s + $opt_O + $opt_S > 1) {
+	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_o && 'o ').($opt_O && 'O ').
+		($opt_s && 's ').($opt_S && 'S')."\n";
+	exit 1;
+}
+if ($opt_p + $opt_f + $opt_c > 1) {
+	print STDERR "Contradictory options: ".($opt_c && 'c ').($opt_f && 'f ').($opt_p && 'p')."\n";
+	exit 1;
+}
+if ($opt_P && ($opt_H || $opt_L)) {
+	print STDERR "Contradictory options: P ".($opt_H ? 'H' : 'L')."\n";
+	exit 1;
+}
+if ($opt_s + $opt_S + $opt_p + $opt_f > 1) {
+	print STDERR "Contradictory options: ".($opt_f && 'f ').($opt_p && 'p ').($opt_s && 's ').
+		($opt_S && 'S')."\n";
+	exit 1;
+}
+$opt_T = $opt_B = 1 unless $opt_T || $opt_B;
 $opt_H = $opt_L = 0 if $opt_P;
 $opt_H ||= $opt_L;
+$opt_s ||= $opt_S;
+$opt_c = 1 if $opt_s;
 if ($opt_i) {
 	$opt_I = lc $opt_I;
 	$opt_X = lc $opt_X;
 }
 if ($opt_0) {
 	$n = "\0";
-	$opt_o = 1 unless $opt_l;
+	$opt_o = 1 unless $opt_l || $opt_s;
 }
 
 for (@ARGV) {
 	next if -l && $opt_r && !$opt_H;
 	$_ = canonpath($_);
 	if (-f) {
-		my $t = -T _ unless $opt_t && $opt_b;
-		if ((!$t && $opt_b) || ($t && $opt_t)) {
+		my $t = -T _ unless $opt_T && $opt_B;
+		if ((!$t && $opt_B) || ($t && $opt_T)) {
 			my $digest = digest($_) or next;
 			if ($files{$digest} && $files{$digest} ne $_ &&
 				(!$opt_n || basename($_) eq basename($files{$digest}))) {
-				printdup($_, $files{$digest});
+				printdup($_, $files{$digest}) and $files{$digest} = $_;
 				$found++;
 			}
 			else {
@@ -62,29 +82,34 @@ for (@ARGV) {
 my $all = !%files;
 @dir = ('.') unless @dir || %files;
 
-find({preprocess => sub {natsort(@_)}, wanted => sub {
-	my $f = ($opt_i ? lc $_ : $_).(-d ? '/' : '');
-	if (!(-f) || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
-		($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
-		$File::Find::prune = 1 unless $opt_r || $_ eq '.';
-		return;
+find({
+	follow => $opt_L,
+	preprocess => sub {natsort(@_)},
+	wanted => sub {
+		my $f = ($opt_i ? lc $_ : $_).(-d ? '/' : '');
+		if (!(-f _) || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
+			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
+			$File::Find::prune = 1 unless $opt_r || $_ eq '.';
+			return;
+		}
+		return if $opt_n && !$all && !$names{$f};
+		my $t = -T _ unless $opt_T && $opt_B;
+		return if (!$t && !$opt_B) || ($t && !$opt_T);
+		my $name = $File::Find::name =~ s/^\.\///r;
+		my $digest = digest($_) or return;
+		if ($files{$digest} && $files{$digest} ne $name && (!$opt_n || $f eq basename($files{$digest}))) {
+			printdup($name, $files{$digest}) and $files{$digest} = $name;
+			$found++;
+		}
+		elsif ($all) {
+			$files{$digest} = $name;
+			$names{basename($_)} = 1 if $opt_n;
+		}
 	}
-	return if $opt_n && !$all && !$names{$f};
-	my $t = -T _ unless $opt_t && $opt_b;
-	return if (!$t && !$opt_b) || ($t && !$opt_t);
-	my $name = $File::Find::name =~ s/^\.\///r;
-	my $digest = digest($_) or return;
-	if ($files{$digest} && $files{$digest} ne $name && (!$opt_n || $f eq basename($files{$digest}))) {
-		printdup($name, $files{$digest});
-		$found++;
-	}
-	elsif ($all) {
-		$files{$digest} = $name;
-		$names{basename($_)} = 1 if $opt_n;
-	}
-}, follow => $opt_L}, @dir);
+}, @dir);
 
-print STDERR (($found ? "\n$found" : 'No'), ($opt_f && $found ? ' probable' : ''),
+print STDERR (($found ? "\n$found" : 'No'),
+	($found ? ($opt_f ? ' probable' : ($opt_c ? ' approximate' : '')) : ''),
 	' duplicate', ($found == 1 ? '' : 's'), "\n") unless $opt_q;
 exit !$found;
 
@@ -104,63 +129,101 @@ sub printdup {
 	elsif ($opt_o) {
 		print "$_[0]$n";
 	}
-	else {
-		print "$_[0] ".($opt_f ? "~~" : "==")." $_[1]\n";
+	elsif ($opt_s) {
+		my $s0 = -s $_[0];
+		my $s1 = -s $_[1];
+		print(($opt_S ? ($s0 >= $s1 ? $_[0] : $_[1]) : ($s0 <= $s1 ? $_[0] : $_[1])).$n);
+		return ($opt_S ? $s0 < $s1 : $s0 > $s1);
 	}
+	else {
+		print "$_[0] ".($opt_f || $opt_c ? "~~" : "==")." $_[1]\n";
+	}
+	return 0;
 }
 
 sub digest {
-	my ($file, $data, $digest, $hex, $s);
+	my ($file, $data, $digest, $hex, $s, $c);
 	my $path = shift;
+	my $size = -s $path or return ($opt_e ? '' : 'empty');
 	if (open($file, '<', $path)) {
-		my $size = -s $file;
 		if ($opt_f) {
-			$s = int($size/5);
-			for (1 .. 6) {
-				if ($_ == 6) {
-					seek($file, -4, 2);
+			$s = int(($size - 24)/5); # 6 * 4B
+			if ($s >= 0) {
+				for (0 .. 5) {
+					seek($file, $s, SEEK_CUR) if $_;
+					read($file, $data, 4) or last;
+					$hex .= unpack('H*', $data);
 				}
-				elsif ($_ > 1) {
-					seek($file, $s, 1);
+			}
+			elsif (read($file, $data, $size)) {
+				$hex = unpack('H*', $data);
+			}
+		}
+		elsif ($opt_c) {
+			$s = 0;
+			$hex = unpack('H*', $c) if read($file, $c, 1);
+			$s++ while read($file, $data, 1) && $c eq $data;
+			$size -= $s;
+			if ($size > 1) {
+				seek($file, -1, SEEK_END);
+				$hex .= unpack('H*', $c) if read($file, $c, 1);
+				$size-- while $size > 1 && seek($file, -2, SEEK_CUR) && read($file, $data, 1) && $c eq $data;
+				if ($size > 2) {
+					seek($file, $s + 1, SEEK_SET);
+					$s = int(($size - 26)/5); # 2B + 6 * 4B
+					if ($s >= 0) {
+						for (0 .. 5) {
+							seek($file, $s, SEEK_CUR) if $_;
+							read($file, $data, 4) or last;
+							$hex .= unpack('H*', $data);
+						}
+					}
+					elsif (read($file, $data, $size - 2)) {
+						$hex .= unpack('H*', $data);
+					}
 				}
-				$hex .= (read($file, $data, 4) ? unpack('H*', $data) : 'x');
 			}
 		}
 		else {
-			$s = int($size/($opt_p ? 4 : 2));
-			my $d = Digest::CRC->new(type => ($opt_p ? 'crc64' : 'crc32'));
-			$d->addfile($file);
-			$digest = $d->hexdigest;
-			seek($file, $s, 0);
-			$hex = (read($file, $data, 2) ? unpack('H*', $data) : 'x');
-			if ($opt_p) {
-				for (1, 2) {
-					seek($file, $s, 1);
-					$hex .= (read($file, $data, 2) ? unpack('H*', $data) : 'x');
+			$s = int($opt_p ? ($size - 6)/4 : ($size - 2)/2);
+			if ($s >= 0) {
+				my $d = Digest::CRC->new(type => ($opt_p ? 'crc64' : 'crc32'));
+				$d->addfile($file);
+				$digest = $d->hexdigest;
+				seek($file, $s, SEEK_SET);
+				for ($opt_p ? (0 .. 2) : 0) {
+					seek($file, $s, SEEK_CUR) if $_;
+					read($file, $data, 2) or last;
+					$hex .= unpack('H*', $data);
 				}
+			}
+			elsif (read($file, $data, $size)) {
+				$hex = unpack('H*', $data);
 			}
 		}
 		close $file;
-		return sprintf('%x', $size).$hex.$digest;
+		return sprintf('%x%s%s', $size, $hex, $digest);
 	}
 	else {
-		print STDERR "finddup: $path: Permission denied\n" unless $opt_q;
+		print STDERR "finddup: $path: Permission denied\n";
 		return '';
 	}
 }
 
 sub HELP_MESSAGE {
 	print <<EOL;
-Usage: finddup [-ainqr0] [-p | -f] [-b | -t] [-o | -O | -l]
+Usage: finddup [-aeinqr0] [-p | -f | -c] [-B | -T] [-o | -O | -s | -S | -l]
                [-H | -L | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
 
 Options:
   -a   Compare all files, including hidden files, such as `Thumbs.db'
        and `Icon?'.
 
+  -e   Ignore empty files.
+
   -i   Ignore case when using `-n', `-I', or `-X'.
 
-  -n   Files are only duplicates when their names match as well.
+  -n   Files are only considered duplicates if their names match.
 
   -q   Do not print number of found duplicates.
 
@@ -174,9 +237,14 @@ Options:
   -f   Only compare file sizes and small samples of file contents instead
        of checksums. This speeds up the process considerably.
 
-  -b   Only compare binary files.
+  -c   Like `-f', but chop off repeating characters at the beginning and
+       end of file contents before comparing them.
 
-  -t   Only compare text files.
+  -B   Only compare binary files.
+
+  -T   Only compare text files.
+
+  -l   Print paths of file and its duplicate on separate lines.
 
   -o   Only print paths of files that are duplicates of other files.
        This is equivalent to the left path in the default output mode.
@@ -185,7 +253,13 @@ Options:
        This is equivalent to the right path in the default output mode.
        This switch might cause paths to be printed multiple times.
 
-  -l   Print paths of file and its duplicate on separate lines.
+  -s   Only print paths of files that are either smaller or exact
+       duplicates of other files.
+       Implies `-c'.
+
+  -S   Only print paths of files that are either larger or exact
+       duplicates of other files.
+       Implies `-c'.
 
   -H   Follow symbolic links on the command line.
 
