@@ -40,7 +40,6 @@ if ($opt_s + $opt_S + $opt_p + $opt_f > 1) {
 	exit 1;
 }
 $opt_T = $opt_B = 1 unless $opt_T || $opt_B;
-$opt_H = $opt_L = 0 if $opt_P;
 $opt_H ||= $opt_L;
 $opt_s ||= $opt_S;
 $opt_c = 1 if $opt_s;
