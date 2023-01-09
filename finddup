@@ -166,7 +166,7 @@ sub digest {
 			if ($size > 1) {
 				seek($file, -1, SEEK_END);
 				$hex .= unpack('H*', $c) if read($file, $c, 1);
-				$size-- while $size > 1 && seek($file, -2, SEEK_CUR) && read($file, $data, 1) && $c eq $data;
+				$size-- while seek($file, -2, SEEK_CUR) && read($file, $data, 1) && $c eq $data;
 				if ($size > 2) {
 					seek($file, $s + 1, SEEK_SET);
 					$s = int(($size - 26)/5); # 2B + 6 * 4B
