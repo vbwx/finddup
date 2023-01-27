@@ -6,12 +6,11 @@ use Getopt::Std;
 use File::Find;
 use File::Compare;
 use File::Spec::Functions;
-use List::Util 'uniqstr';
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.4';
+our $VERSION = '1.4.1';
 our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a, $opt_i);
 our ($opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -64,7 +63,7 @@ for (@ARGV) {
 			push(@{$files{$digest}}, [$_, $s]);
 		}
 		else {
-			push(@{$files{$s}}, $_);
+			push(@{$files{$s}}, [$_, 1]);
 		}
 	}
 	elsif (-d _) {
@@ -94,22 +93,23 @@ find({
 		my $name = $File::Find::name =~ s/^\.\///r;
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or return;
-			push(@{$files{$digest}}, [$name, $s]);
+			push(@{$files{$digest}}, [$name, $s]) if $all || $files{$digest};
 		}
 		else {
-			push(@{$files{$s}}, $name);
+			push(@{$files{$s}}, [$name, $all]);
 		}
 	}
 }, @dir);
 
 if ($opt_p) {
 	for (sort {$a <=> $b} keys %files) {
-		my @f = uniqstr(@{$files{$_}});
+		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
 		if (@f > 1) {
 			for my $i (0 .. $#f-1) {
 				for ($i+1 .. $#f) {
-					if (defined $f[$_] && defined $f[$i] && compare($f[$_], $f[$i]) == 0) {
-						printdup($f[$_], $f[$i]);
+					if (defined $f[$_] && defined $f[$i] && ($f[$_][1] || $f[$i][1]) &&
+						compare($f[$_][0], $f[$i][0]) == 0) {
+						printdup($f[$_][0], $f[$i][0]);
 						undef $f[$_];
 						$found++;
 					}
@@ -129,23 +129,23 @@ elsif ($opt_t) {
 				@f = sort {@{$b}[1] <=> @{$a}[1]} @f;
 			}
 			printdup($f[$_][0], $f[0][0]) for 1 .. $#f;
-			$found += @f-1;
+			$found += @f - 1;
 		}
 	}
 }
 else {
 	for my $s (sort {$a <=> $b} keys %files) {
-		my @f = uniqstr(@{$files{$s}});
+		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$s}}};
 		if (@f > 1) {
 			my %m = ();
 			for (@f) {
-				my $digest = digest($_, $s) or next;
+				my $digest = digest(@{$_}[0], $s) or next;
 				if ($m{$digest}) {
-					printdup($_, $m{$digest});
+					printdup(@{$_}[0], $m{$digest});
 					$found++;
 				}
-				else {
-					$m{$digest} = $_;
+				elsif (@{$_}[1]) {
+					$m{$digest} = @{$_}[0];
 				}
 			}
 		}
