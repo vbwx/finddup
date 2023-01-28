@@ -96,7 +96,7 @@ find({
 			push(@{$files{$digest}}, [$name, $s]) if $all || $files{$digest};
 		}
 		else {
-			push(@{$files{$s}}, [$name, $all]);
+			push(@{$files{$s}}, [$name, $all]) if $all || $files{$s};
 		}
 	}
 }, @dir);
@@ -106,12 +106,13 @@ if ($opt_p) {
 		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
 		if (@f > 1) {
 			for my $i (0 .. $#f-1) {
-				for ($i+1 .. $#f) {
-					if (defined $f[$_] && defined $f[$i] && ($f[$_][1] || $f[$i][1]) &&
-						compare($f[$_][0], $f[$i][0]) == 0) {
-						printdup($f[$_][0], $f[$i][0]);
-						undef $f[$_];
-						$found++;
+				if ($f[$i][1]) {
+					for ($i+1 .. $#f) {
+						if ($f[$_] && compare($f[$_][0], $f[$i][0]) == 0) {
+							printdup($f[$_][0], $f[$i][0]);
+							undef $f[$_];
+							$found++;
+						}
 					}
 				}
 			}
