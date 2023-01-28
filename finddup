@@ -29,18 +29,19 @@ if ($opt_p && $opt_t) {
 	print STDERR "Contradictory options: p t\n";
 	exit 64;
 }
-if ($opt_P && ($opt_H || $opt_L)) {
-	print STDERR "Contradictory options: P ".($opt_H ? 'H' : 'L')."\n";
-	exit 64;
-}
 if ($opt_p && ($opt_s || $opt_S)) {
 	print STDERR "Contradictory options: p ".($opt_s ? 's' : 'S')."\n";
 	exit 64;
 }
 $opt_T = $opt_B = 1 unless $opt_T || $opt_B;
-$opt_H ||= $opt_L;
 $opt_s ||= $opt_S;
 $opt_t = 1 if $opt_s;
+if ($opt_P) {
+	$opt_H = $opt_L = 0;
+}
+else {
+	$opt_H ||= $opt_L;
+}
 if ($opt_i) {
 	$opt_I = fc $opt_I;
 	$opt_X = fc $opt_X;
@@ -114,6 +115,9 @@ if ($opt_p) {
 							$found++;
 						}
 					}
+				}
+				elsif ($f[$i]) {
+					last;
 				}
 			}
 		}
