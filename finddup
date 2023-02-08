@@ -269,7 +269,7 @@ Options:
 
   -T   Only compare text files.
 
-  -l   Print paths of file and its duplicate on separate lines.
+  -l   Print paths of each file and its duplicate on separate lines.
 
   -o   Only print paths of files that are duplicates of other files.
        This is equivalent to the left path in the default output mode.
@@ -294,11 +294,11 @@ Options:
 
   -I GLOB
        Only compare files matching the pattern GLOB.
-       Call `perldoc Text::Glob` to learn about pattern syntax.
+       Call `perldoc Text::Glob' to learn about pattern syntax.
 
   -X GLOB
        Do not compare files matching the pattern GLOB.
-       Call `perldoc Text::Glob` to learn about pattern syntax.
+       Call `perldoc Text::Glob' to learn about pattern syntax.
 
   -i   Ignore case when using `-I' or `-X'.
 EOL
