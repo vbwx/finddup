@@ -11,15 +11,15 @@ use Fcntl ':seek';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 our $VERSION = '1.4.1';
-our ($opt_l, $opt_o, $opt_O, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a, $opt_i);
-our ($opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
+our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a);
+our ($opt_i, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
 my @dir = ();
 my %files = ();
 my $n = "\n";
 my $found = 0;
 
-getopts('loOsS0rqpftBTaeiHLPI:X:');
+getopts('loOsS0RrqpftBTaeiHLPI:X:');
 if ($opt_l + $opt_o + $opt_s + $opt_O + $opt_S > 1) {
 	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_o && 'o ').($opt_O && 'O ').
 		($opt_s && 's ').($opt_S && 'S')."\n";
@@ -35,6 +35,7 @@ if ($opt_p && ($opt_s || $opt_S)) {
 }
 $opt_T = $opt_B = 1 unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
+$opt_r ||= $opt_R;
 $opt_t = 1 if $opt_s;
 if ($opt_P) {
 	$opt_H = $opt_L = 0;
