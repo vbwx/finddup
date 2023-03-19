@@ -10,7 +10,7 @@ use Text::Glob 'match_glob';
 use Fcntl ':seek';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.4.1';
+our $VERSION = '1.4.2';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a);
 our ($opt_i, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -27,6 +27,10 @@ if ($opt_l + $opt_o + $opt_s + $opt_O + $opt_S > 1) {
 }
 if ($opt_p && $opt_t) {
 	print STDERR "Contradictory options: p t\n";
+	exit 64;
+}
+if ($opt_B && $opt_T) {
+	print STDERR "Contradictory options: B T\n";
 	exit 64;
 }
 if ($opt_p && ($opt_s || $opt_S)) {
@@ -258,7 +262,7 @@ Options:
   -r   Look for files in subdirectories as well.
 
   -0   Separate paths with NUL characters; useful for `xargs -0'.
-       Implies `-o' unless `-O' or `-l' is specified.
+       Implies `-o' unless `-O', `-s', `-S', or `-l' is specified.
 
   -p   Compare the entire contents of files. This is slower but only
        finds files that are perfect duplicates.
