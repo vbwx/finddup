@@ -6,11 +6,12 @@ use Getopt::Std;
 use File::Find;
 use File::Compare;
 use File::Spec::Functions;
+use Sort::Key::Natural qw(natsort natkeysort);
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.4.2';
+our $VERSION = '1.4.3';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a);
 our ($opt_i, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -85,6 +86,7 @@ my $all = !%files;
 
 find({
 	follow => $opt_L,
+	preprocess => sub {natsort(@_)},
 	wanted => sub {
 		my $f = ($opt_i ? fc $_ : $_);
 		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
@@ -108,7 +110,7 @@ find({
 }, @dir);
 
 if ($opt_p) {
-	for (sort {$a <=> $b} keys %files) {
+	for (natkeysort {$files{$_}[0][0]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
 		if (@f > 1) {
 			for my $i (0 .. $#f-1) {
@@ -129,7 +131,7 @@ if ($opt_p) {
 	}
 }
 elsif ($opt_t) {
-	for (sort {$a <=> $b} keys %files) {
+	for (natkeysort {$files{$_}[0][0]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
 		if (@f > 1) {
 			if ($opt_S) {
@@ -144,7 +146,7 @@ elsif ($opt_t) {
 	}
 }
 else {
-	for my $s (sort {$a <=> $b} keys %files) {
+	for my $s (natkeysort {$files{$_}[0][0]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$s}}};
 		if (@f > 1) {
 			my %m = ();
