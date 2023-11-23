@@ -3,3 +3,4 @@ requires 'File::Find', '1.39';
 requires 'Getopt::Std', '1.13';
 requires 'File::Spec::Functions', '3.84';
 requires 'File::Compare', '1.1007';
+requires 'Sort::Key', '1.33';

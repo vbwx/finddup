@@ -10,20 +10,29 @@ use Sort::Key::Natural qw(natsort natkeysort);
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
 
+use constant {
+	NO => 0,
+	YES => 1,
+	PATH => 0,
+	SIZE => 1,
+	COMPARE => 1,
+	TIME => 2
+};
+
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.4.3';
-our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_f, $opt_t, $opt_B, $opt_T, $opt_a);
-our ($opt_i, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
+our $VERSION = '1.5';
+our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M);
+our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
 my @dir = ();
 my %files = ();
 my $n = "\n";
 my $found = 0;
 
-getopts('loOsS0RrqpftBTaeiHLPI:X:');
-if ($opt_l + $opt_o + $opt_s + $opt_O + $opt_S > 1) {
+getopts('loOsSmM0RrqptBTaeiHLPI:X:');
+if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M > 1) {
 	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_o && 'o ').($opt_O && 'O ').
-		($opt_s && 's ').($opt_S && 'S')."\n";
+		($opt_s && 's ').($opt_S && 'S ').($opt_m && 'm ').($opt_M && 'M')."\n";
 	exit 64;
 }
 if ($opt_p && $opt_t) {
@@ -38,12 +47,13 @@ if ($opt_p && ($opt_s || $opt_S)) {
 	print STDERR "Contradictory options: p ".($opt_s ? 's' : 'S')."\n";
 	exit 64;
 }
-$opt_T = $opt_B = 1 unless $opt_T || $opt_B;
+$opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
+$opt_m ||= $opt_M;
 $opt_r ||= $opt_R;
-$opt_t = 1 if $opt_s;
+$opt_t = YES if $opt_s;
 if ($opt_P) {
-	$opt_H = $opt_L = 0;
+	$opt_H = $opt_L = NO;
 }
 else {
 	$opt_H ||= $opt_L;
@@ -54,7 +64,7 @@ if ($opt_i) {
 }
 if ($opt_0) {
 	$n = "\0";
-	$opt_o = 1 unless $opt_O || $opt_l || $opt_s;
+	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_m;
 }
 
 for (@ARGV) {
@@ -67,10 +77,10 @@ for (@ARGV) {
 		next if $opt_e && !$s;
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or next;
-			push(@{$files{$digest}}, [$_, $s]);
+			push(@{$files{$digest}}, ($opt_m ? [$_, $s, -M _] : [$_, $s])); # [PATH, SIZE, TIME]
 		}
 		else {
-			push(@{$files{$s}}, [$_, 1]);
+			push(@{$files{$s}}, ($opt_m ? [$_, YES, -M _] : [$_, YES])); # [PATH, COMPARE, TIME]
 		}
 	}
 	elsif (-d _) {
@@ -91,7 +101,7 @@ find({
 		my $f = ($opt_i ? fc $_ : $_);
 		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
 			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
-			$File::Find::prune = 1 unless $opt_r || $_ eq '.';
+			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
 		my $t = -T _ unless $opt_T && $opt_B;
@@ -101,23 +111,31 @@ find({
 		my $name = $File::Find::name =~ s/^\.\///r;
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or return;
-			push(@{$files{$digest}}, [$name, $s]) if $all || $files{$digest};
+			push(@{$files{$digest}}, ($opt_m ? [$name, $s, -M _] : [$name, $s])) if $all || $files{$digest};
+			# [PATH, SIZE, TIME]
 		}
 		else {
-			push(@{$files{$s}}, [$name, $all]) if $all || $files{$s};
+			push(@{$files{$s}}, ($opt_m ? [$name, $all, -M _] : [$name, $all])) if $all || $files{$s};
+			# [PATH, COMPARE, TIME]
 		}
 	}
 }, @dir);
 
 if ($opt_p) {
-	for (natkeysort {$files{$_}[0][0]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
+	for (natkeysort {$files{$_}[0][PATH]} keys %files) {
+		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$_}}};
 		if (@f > 1) {
+			if ($opt_M) {
+				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
+			}
+			elsif ($opt_m) {
+				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
+			}
 			for my $i (0 .. $#f-1) {
-				if ($f[$i][1]) {
+				if ($f[$i][COMPARE]) {
 					for ($i+1 .. $#f) {
-						if ($f[$_] && compare($f[$_][0], $f[$i][0]) == 0) {
-							printdup($f[$_][0], $f[$i][0]);
+						if ($f[$_] && compare($f[$_][PATH], $f[$i][PATH]) == 0) {
+							printdup($f[$_][PATH], $f[$i][PATH]);
 							undef $f[$_];
 							$found++;
 						}
@@ -131,33 +149,45 @@ if ($opt_p) {
 	}
 }
 elsif ($opt_t) {
-	for (natkeysort {$files{$_}[0][0]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$_}}};
+	for (natkeysort {$files{$_}[0][PATH]} keys %files) {
+		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$_}}};
 		if (@f > 1) {
 			if ($opt_S) {
-				@f = sort {@{$a}[1] <=> @{$b}[1]} @f;
+				@f = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @f;
 			}
 			elsif ($opt_s) {
-				@f = sort {@{$b}[1] <=> @{$a}[1]} @f;
+				@f = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @f;
 			}
-			printdup($f[$_][0], $f[0][0]) for 1 .. $#f;
+			elsif ($opt_M) {
+				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
+			}
+			elsif ($opt_m) {
+				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
+			}
+			printdup($f[$_][PATH], $f[0][PATH]) for 1 .. $#f;
 			$found += @f - 1;
 		}
 	}
 }
 else {
-	for my $s (natkeysort {$files{$_}[0][0]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[0]}++} @{$files{$s}}};
+	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
+		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$s}}};
 		if (@f > 1) {
+			if ($opt_M) {
+				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
+			}
+			elsif ($opt_m) {
+				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
+			}
 			my %m = ();
 			for (@f) {
-				my $digest = digest(@{$_}[0], $s) or next;
+				my $digest = digest(@{$_}[PATH], $s) or next;
 				if ($m{$digest}) {
-					printdup(@{$_}[0], $m{$digest});
+					printdup(@{$_}[PATH], $m{$digest});
 					$found++;
 				}
-				elsif (@{$_}[1]) {
-					$m{$digest} = @{$_}[0];
+				elsif (@{$_}[COMPARE]) {
+					$m{$digest} = @{$_}[PATH];
 				}
 			}
 		}
@@ -165,13 +195,13 @@ else {
 }
 
 
-print STDERR (($found ? "\n$found" : 'No'), ($found ? ($opt_p ? '' : ' probable') : ''),
+print STDERR (($found ? "\n$found" : 'No'), ($found ? ($opt_p ? ' exact' : ' possible') : ''),
 	' duplicate', ($found == 1 ? '' : 's'), "\n") unless $opt_q;
 exit !$found;
 
 
 sub printdup {
-	if ($opt_o || $opt_s) {
+	if ($opt_o || $opt_s || $opt_m) {
 		print "$_[0]$n";
 	}
 	elsif ($opt_O) {
@@ -245,12 +275,11 @@ sub trim_digest {
 		print STDERR "finddup: $path: Permission denied\n";
 		return '';
 	}
-
 }
 
 sub HELP_MESSAGE {
 	print <<EOL;
-Usage: finddup [-aeiqr0] [-p | -t] [-B | -T] [-o | -O | -s | -S | -l]
+Usage: finddup [-aeiqr0] [-p | -t] [-B | -T] [-l | -o | -O | -s | -S | -m | -M]
                [-H | -L | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
 
 Options:
@@ -264,7 +293,8 @@ Options:
   -r   Look for files in subdirectories as well.
 
   -0   Separate paths with NUL characters; useful for `xargs -0'.
-       Implies `-o' unless `-O', `-s', `-S', or `-l' is specified.
+       Implies `-o' unless `-O', `-s', `-S', `-m', `-M', or `-l'
+       is specified.
 
   -p   Compare the entire contents of files. This is slower but only
        finds files that are perfect duplicates.
@@ -292,6 +322,10 @@ Options:
   -S   Only print paths of files that are either larger or exact
        duplicates of other files.
        Implies `-t'.
+
+  -m   Only print paths of files that are older than their duplicates.
+
+  -M   Only print paths of files that are newer than their duplicates.
 
   -H   Follow symbolic links on the command line.
 
