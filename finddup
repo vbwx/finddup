@@ -20,7 +20,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.5';
+our $VERSION = '1.5.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -31,20 +31,16 @@ my $found = 0;
 
 getopts('loOsSmM0RrqptBTaeiHLPI:X:');
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M > 1) {
-	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_o && 'o ').($opt_O && 'O ').
-		($opt_s && 's ').($opt_S && 'S ').($opt_m && 'm ').($opt_M && 'M')."\n";
+	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M').
+		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S ')."\n";
 	exit 64;
 }
-if ($opt_p && $opt_t) {
-	print STDERR "Contradictory options: p t\n";
+if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
+	print STDERR "Contradictory options: p ".($opt_t && 't ').($opt_s && 's').($opt_S && 'S')."\n";
 	exit 64;
 }
 if ($opt_B && $opt_T) {
 	print STDERR "Contradictory options: B T\n";
-	exit 64;
-}
-if ($opt_p && ($opt_s || $opt_S)) {
-	print STDERR "Contradictory options: p ".($opt_s ? 's' : 'S')."\n";
 	exit 64;
 }
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
@@ -52,6 +48,7 @@ $opt_s ||= $opt_S;
 $opt_m ||= $opt_M;
 $opt_r ||= $opt_R;
 $opt_t = YES if $opt_s;
+$Text::Glob::strict_leading_dot = NO if $opt_a;
 if ($opt_P) {
 	$opt_H = $opt_L = NO;
 }
