@@ -122,12 +122,7 @@ if ($opt_p) {
 	for (natkeysort {$files{$_}[0][PATH]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$_}}};
 		if (@f > 1) {
-			if ($opt_M) {
-				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
-			}
-			elsif ($opt_m) {
-				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
-			}
+			sort_matches(\@f);
 			for my $i (0 .. $#f-1) {
 				if ($f[$i][COMPARE]) {
 					for ($i+1 .. $#f) {
@@ -149,18 +144,7 @@ elsif ($opt_t) {
 	for (natkeysort {$files{$_}[0][PATH]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$_}}};
 		if (@f > 1) {
-			if ($opt_S) {
-				@f = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @f;
-			}
-			elsif ($opt_s) {
-				@f = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @f;
-			}
-			elsif ($opt_M) {
-				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
-			}
-			elsif ($opt_m) {
-				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
-			}
+			sort_matches(\@f);
 			printdup($f[$_][PATH], $f[0][PATH]) for 1 .. $#f;
 			$found += @f - 1;
 		}
@@ -170,12 +154,7 @@ else {
 	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
 		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$s}}};
 		if (@f > 1) {
-			if ($opt_M) {
-				@f = sort {@{$b}[TIME] <=> @{$a}[TIME]} @f;
-			}
-			elsif ($opt_m) {
-				@f = sort {@{$a}[TIME] <=> @{$b}[TIME]} @f;
-			}
+			sort_matches(\@f);
 			my %m = ();
 			for (@f) {
 				my $digest = digest(@{$_}[PATH], $s) or next;
@@ -209,6 +188,21 @@ sub printdup {
 	}
 	else {
 		print "$_[0] ".($opt_p ? "==" : "~~")." $_[1]\n";
+	}
+}
+
+sub sort_matches {
+	if ($opt_M) {
+		@{$_[0]} = sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$_[0]};
+	}
+	elsif ($opt_m) {
+		@{$_[0]} = sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$_[0]};
+	}
+	elsif ($opt_S) {
+		@{$_[0]} = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$_[0]};
+	}
+	elsif ($opt_s) {
+		@{$_[0]} = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$_[0]};
 	}
 }
 
