@@ -1,0 +1,35 @@
+#compdef finddup
+
+# Completion function for zsh
+
+_arguments -S -s \
+	'-a[compare all files (including hidden files)]' \
+	'-e[ignore empty files]' \
+	'(-r -R)'{-r,-R}'[look for duplicates in subdirectories as well]' \
+	'-I+[only compare files matching the pattern GLOB]:glob:_files' \
+	'-X+[do not compare files matching the pattern GLOB]:glob:_files' \
+	'-i[ignore case of glob patterns]' \
+	'-q[do not print the number of duplicated or unique files]' \
+	'-0[print paths with NUL characters as separators]' \
+	'(- :)--version' \
+	'(- :)--help' \
+	'*:file or directory:_files' \
+	+ '(method)' \
+		'(-s -S)-p[compare the entire contents of files]' \
+		'-t[trim repeating characters from the beginning and end of files]' \
+	+ '(mode)' \
+		'-l[print paths of each file and its duplicate on separate lines]' \
+		'-o[only print paths of files that are duplicates of other files]' \
+		'-O[only print paths of files that have at least one duplicate]' \
+		'(-p)-s[only print paths of smaller duplicates]' \
+		'(-p)-S[only print paths of larger duplicates]' \
+		'-m[only print paths of older duplicates]' \
+		'-M[only print paths of newer duplicates]' \
+		'-n[only print paths of files that have no duplicates]' \
+	+ '(symlinks)' \
+		'-H[follow symbolic links on the command line]' \
+		'-L[follow all symbolic links]' \
+		'-P[do not follow symbolic links]' \
+	+ '(filetype)' \
+		'-B[only compare binary files]' \
+		'-T[only compare text files]' \
