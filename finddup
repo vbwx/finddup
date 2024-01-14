@@ -17,7 +17,8 @@ use constant {
 	SIZE => 1,
 	COMPARE => 1,
 	INDEX => 1,
-	TIME => 2
+	TIME => 2,
+	EX_USAGE => 2
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
@@ -27,22 +28,18 @@ our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $op
 
 my @dir = ();
 my %files = ();
-my $n = "\n";
 my $found = 0;
 
-getopts('loOsSmM0RrqptBTaeinHLPI:X:');
+getopts('loOsSmMn0RrqptBTaeiHLPI:X:') or die '', EX_USAGE;
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M + $opt_n > 1) {
-	print STDERR "Contradictory options: ".($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M').
-		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S ')."\n";
-	exit 64;
+	die "Mutually exclusive options: ".($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M').
+		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S '), EX_USAGE;
 }
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
-	print STDERR "Contradictory options: p ".($opt_t && 't ').($opt_s && 's').($opt_S && 'S')."\n";
-	exit 64;
+	die "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').($opt_S && 'S'), EX_USAGE;
 }
 if ($opt_B && $opt_T) {
-	print STDERR "Contradictory options: B T\n";
-	exit 64;
+	die "Mutually exclusive options: B T", EX_USAGE;
 }
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
@@ -61,8 +58,11 @@ if ($opt_i) {
 	$opt_X = fc $opt_X;
 }
 if ($opt_0) {
-	$n = "\0";
-	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_m;
+	$\ = "\0";
+	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_m || $opt_n;
+}
+else {
+	$\ = "\n";
 }
 
 for (@ARGV) {
@@ -85,8 +85,7 @@ for (@ARGV) {
 		push(@dir, $_);
 	}
 	else {
-		print STDERR "finddup: $_: No such file or directory\n";
-		exit 66;
+		die "$_: No such file or directory";
 	}
 }
 my $all = !%files;
@@ -132,7 +131,7 @@ if ($opt_p) {
 								delete @{$files{$s}}[$_, $i];
 							}
 							else {
-								printdup($f[$_][PATH], $f[$i][PATH]);
+								print_dup($f[$_][PATH], $f[$i][PATH]);
 								$found++;
 							}
 							delete $f[$_];
@@ -155,7 +154,7 @@ elsif ($opt_t) {
 			}
 			else {
 				sort_matches(\@f);
-				printdup($f[$_][PATH], $f[0][PATH]) for 1 .. $#f;
+				print_dup($f[$_][PATH], $f[0][PATH]) for 1 .. $#f;
 				$found += @f - 1;
 			}
 		}
@@ -174,7 +173,7 @@ else {
 						delete @{$files{$s}}[$_, $m{$digest}[INDEX]];
 					}
 					else {
-						printdup($f[$_][PATH], $m{$digest}[PATH]);
+						print_dup($f[$_][PATH], $m{$digest}[PATH]);
 						$found++;
 					}
 				}
@@ -188,28 +187,36 @@ else {
 if ($opt_n) {
 	my @f;
 	push(@f, do {my %x; map {@{$_}[PATH]} grep {$_ && !$x{@{$_}[PATH]}++} @{$files{$_}}}) for keys %files;
-	print $_.$n for natsort(@f);
+	print $_ for natsort(@f);
 	$found = scalar @f;
 }
 
-print STDERR (($found ? "\n$found" : 'No'), ($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
-	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'), "\n") unless $opt_q;
+print_info(($found ? "\n$found" : 'No'), ($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
+	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'));
 exit !$found;
 
 
-sub printdup {
+sub print_dup {
+	my ($dup, $orig) = @_;
 	if ($opt_o || $opt_s || $opt_m) {
-		print $_[0].$n;
+		print $dup;
 	}
 	elsif ($opt_O) {
-		print $_[1].$n;
+		print $orig;
 	}
 	elsif ($opt_l) {
-		print $_[0].$n.$_[1].$n;
+		print $dup;
+		print $orig;
 	}
 	else {
-		print "$_[0] ".($opt_p ? "==" : "~~")." $_[1]\n";
+		print $dup.' '.($opt_p ? '==' : '~~').' '.$orig;
 	}
+	return;
+}
+
+sub print_info {
+	say STDERR @_ unless $opt_q;
+	return;
 }
 
 sub sort_matches {
@@ -247,7 +254,7 @@ sub digest {
 		return $hex;
 	}
 	else {
-		print STDERR "finddup: $path: Permission denied\n";
+		warn "$path: Permission denied";
 		return '';
 	}
 }
@@ -284,7 +291,7 @@ sub trim_digest {
 		return sprintf('%d:%s', $size, $hex);
 	}
 	else {
-		print STDERR "finddup: $path: Permission denied\n";
+		warn "$path: Permission denied";
 		return '';
 	}
 }
