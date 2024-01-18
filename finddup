@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
-use 5.016;
+use v5.16;
 use Getopt::Std;
 use File::Find;
 use File::Compare;
@@ -9,6 +9,7 @@ use File::Spec::Functions;
 use Sort::Key::Natural qw(natsort natkeysort);
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
+use subs qw(die warn);
 
 use constant {
 	NO => 0,
@@ -22,7 +23,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
-our $VERSION = '1.6';
+$main::VERSION = '1.6.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 
@@ -69,9 +70,10 @@ for (@ARGV) {
 	next if -l && !$opt_H;
 	$_ = canonpath($_);
 	if (-f) {
-		my $t = -T _ unless $opt_T && $opt_B;
+		my ($s, $t);
+		$t = -T _ unless $opt_T && $opt_B;
 		next unless (!$t && $opt_B) || ($t && $opt_T);
-		my $s = -s _;
+		$s = -s _;
 		next if $opt_e && !$s;
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or next;
@@ -82,7 +84,7 @@ for (@ARGV) {
 		}
 	}
 	elsif (-d _) {
-		push(@dir, $_);
+		push(@dir, (-l ? readlink($_) : $_));
 	}
 	else {
 		die "$_: No such file or directory";
@@ -93,19 +95,21 @@ my $all = !%files;
 
 find({
 	follow => $opt_L,
+	follow_skip => 2,
 	preprocess => sub {natsort(@_)},
 	wanted => sub {
-		my $f = ($opt_i ? fc $_ : $_);
+		my ($f, $s, $t, $name);
+		$f = ($opt_i ? fc $_ : $_);
 		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
 			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
 			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
-		my $t = -T _ unless $opt_T && $opt_B;
+		$t = -T _ unless $opt_T && $opt_B;
 		return unless (!$t && $opt_B) || ($t && $opt_T);
-		my $s = -s _;
+		$s = -s _;
 		return if $opt_e && !$s;
-		my $name = $File::Find::name =~ s/^\.\///r;
+		$name = $File::Find::name =~ s/^\.\///r;
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or return;
 			push(@{$files{$digest}}, ($opt_m ? [$name, $s, -M _] : [$name, $s])) if $all || $files{$digest};
@@ -220,23 +224,25 @@ sub print_info {
 }
 
 sub sort_matches {
+	my ($ref) = @_;
 	if ($opt_M) {
-		@{$_[0]} = sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$_[0]};
+		@{$ref} = sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
 	}
 	elsif ($opt_m) {
-		@{$_[0]} = sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$_[0]};
+		@{$ref} = sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$ref};
 	}
 	elsif ($opt_S) {
-		@{$_[0]} = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$_[0]};
+		@{$ref} = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$ref};
 	}
 	elsif ($opt_s) {
-		@{$_[0]} = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$_[0]};
+		@{$ref} = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$ref};
 	}
+	return;
 }
 
 sub digest {
-	my ($file, $data, $hex, $s);
 	my ($path, $size) = @_;
+	my ($file, $data, $hex, $s);
 	return 'x' unless $size;
 	if (open($file, '<', $path)) {
 		$s = int(($size - 30)/5); # 6 * 5B
@@ -260,8 +266,8 @@ sub digest {
 }
 
 sub trim_digest {
-	my ($file, $data, $hex, $s, $c);
 	my ($path, $size) = @_;
+	my ($file, $data, $hex, $s, $c);
 	return 'x' unless $size;
 	if (open($file, '<', $path)) {
 		$s = 0;
@@ -296,72 +302,386 @@ sub trim_digest {
 	}
 }
 
-sub HELP_MESSAGE {
-	print <<EOL;
-Usage: finddup [-aeiqr0] [-p | -t] [-l | -o | -O | -s | -S | -m | -M | -n]
-               [-B | -T] [-H | -L | -P] [-I GLOB] [-X GLOB] [FILE ...] [DIR ...]
-
-Options:
-  -a   Compare all files, including hidden files, such as `Thumbs.db'
-       and `Icon?'.
-
-  -e   Ignore empty files.
-
-  -q   Do not print the number of found duplicates.
-
-  -r   Look for duplicates in subdirectories as well.
-
-  -0   Separate paths with NUL characters; useful for `xargs -0'.
-       Implies `-o' unless `-O', `-s', `-S', `-m', `-M', or `-l'
-       is specified.
-
-  -p   Compare the entire contents of files. This is slower but only
-       finds files that are perfect duplicates.
-
-  -t   Trim repeating characters at the beginning and end of file
-       contents before comparing them.
-
-  -B   Only compare binary files.
-
-  -T   Only compare text files.
-
-  -l   Print paths of each file and its duplicate on separate lines.
-
-  -o   Only print paths of files that are duplicates of other files.
-       This is equivalent to the left path in the default output mode.
-
-  -O   Only print paths of files that have at least one duplicate.
-       This is equivalent to the right path in the default output mode.
-       This switch might cause paths to be printed multiple times.
-
-  -s   Only print paths of files that are either smaller or exact
-       duplicates of other files.
-       Implies `-t'.
-
-  -S   Only print paths of files that are either larger or exact
-       duplicates of other files.
-       Implies `-t'.
-
-  -m   Only print paths of files that are older than their duplicates.
-
-  -M   Only print paths of files that are newer than their duplicates.
-
-  -n   Only print paths of files that do not have duplicates.
-
-  -H   Follow symbolic links on the command line.
-
-  -L   Follow all symbolic links.
-
-  -P   Do not follow symbolic links. This is the default.
-
-  -I GLOB
-       Only compare files matching the pattern GLOB.
-       Call `perldoc Text::Glob' to learn about pattern syntax.
-
-  -X GLOB
-       Do not compare files matching the pattern GLOB.
-       Call `perldoc Text::Glob' to learn about pattern syntax.
-
-  -i   Ignore case when using `-I' or `-X'.
-EOL
+sub pod2usage {
+	eval 'use open qw(:locale :std)';
+	require Pod::Usage;
+	goto &Pod::Usage::pod2usage;
 }
+
+sub HELP_MESSAGE {
+	pod2usage(-verbose => 1);
+	return;
+}
+
+sub die {
+	my ($msg, $ex) = @_;
+	say STDERR "$0: $msg" if $msg;
+	pod2usage() if $ex == EX_USAGE;
+	exit($ex || 1);
+}
+
+sub warn {
+	my ($msg) = @_;
+	say STDERR "$0: $msg";
+	return;
+}
+
+__END__
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+=for comment
+finddup - Finds duplicated files fast and efficiently.
+
+B<finddup> E<ndash> Finds duplicated files fast and efficiently.
+
+=head1 SYNOPSIS
+
+=over 8
+
+=item B<finddup>
+
+S<[B<-aeiqr0>] [B<-p> | B<-t>] [B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-m> | B<-M> | B<-n>]>
+S<[B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>] [B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
+
+=back
+
+=head1 DESCRIPTION
+
+This utility compares the contents of files to check if any of them match.
+What is considered a match depends on the chosen method.
+
+=over 2
+
+=item *
+
+By default, files are compared B<heuristically>, which means that files are
+considered duplicates if they are the same size, and if a few bytes
+of different parts of the file contents are identical to their counterparts.
+
+This method is very fast and accurate enough for most use cases, but it
+can produce false positives (or false negatives when invoked with B<-n>).
+
+=item *
+
+The B<trim> method (B<-t>) also employs heuristic comparison as
+described above, but it ignores repeating characters at the start and
+end of file contents. This is especially useful for text files, which often
+end with blank lines, and video files, which might have a varying number of
+NUL characters at the end of their contents.
+
+However, this method is a little slower because it needs to open every file
+to compare their contents to each other, whereas the default method only
+has to compare files of the same size.
+
+=item *
+
+With B<precise comparison> (B<-p>), file contents are compared
+byte for byte, so it can be guaranteed that only perfect duplicates are found.
+
+This method is the slowest one unless all files are different sizes, in which
+case it is actually faster than the trim method.
+
+=back
+
+There are various output modes that are mostly useful for subsequent
+processing of the results.
+
+=over 2
+
+=item *
+
+By default, copies and their originals are shown in pairs. The format of
+this mode might change in the future and is therefore not suited for automatic
+processing or piping.
+
+=item *
+
+The switch B<-l> prints the paths of each file and its duplicate on separate
+lines.
+
+=item *
+
+The switch B<-o> prints all copies of other files, whereas B<-O> prints
+the I<original> files, i.e., the files that were encountered first and found
+to have duplicates.
+
+=item *
+
+The switches B<-s> and B<-S> print the smallest and largest duplicates,
+respectively. Since this only makes sense when used with the trim method,
+these options automatically activate it.
+
+=item *
+
+The switches B<-m> and B<-M> print the least and most recently modified
+duplicates, respectively.
+
+=item *
+
+The switch B<-n> negates the results, meaning that only the paths of files
+that do not have duplicates are printed.
+
+=back
+
+As for non-option arguments, B<finddup> differentiates between files and
+directories; files passed as arguments are checked and compared first, and
+directories are traversed after. Hence, while it does not matter whether
+files or directories appear first on the command line, the order of multiple
+files and the order of multiple directories might affect the results,
+depending on the output mode.
+
+When invoked without non-option arguments, B<finddup> looks for duplicates
+in the working directory. When files are passed as arguments, B<finddup>
+only looks for copies of these files.
+
+This manual contains a L<tutorial|/TUTORIAL>.
+
+=head1 OPTIONS
+
+=head2 Comparison Methods
+
+=over
+
+=item B<-p>
+
+Compare the entire contents of files.
+This is slower but only finds files that are perfect duplicates.
+
+=item B<-t>
+
+Trim repeating characters from the beginning and end of file contents
+before comparing them.
+
+=back
+
+=head2 Output Modes
+
+=over
+
+=item B<-l>
+
+Print paths of each file and its duplicate on separate lines.
+
+=item B<-o>
+
+Only print paths of files that are duplicates of other files.
+This is equivalent to the left path in the default output mode.
+
+=item B<-O>
+
+Only print paths of files that have at least one duplicate.
+This is equivalent to the right path in the default output mode.
+
+This switch might cause paths to be printed multiple times.
+
+=item B<-s>
+
+Only print paths of files whose size is smaller than or equal to
+the size of their respective duplicates.
+
+Implies B<-t>.
+
+=item B<-S>
+
+Only print paths of files whose size is larger than or equal to
+the size of their respective duplicates.
+
+Implies B<-t>.
+
+=item B<-m>
+
+Only print paths of files whose modification date is older than
+or equal to the date of their respective duplicates.
+
+=item B<-M>
+
+Only print paths of files whose modification date is newer than
+or equal to the date of their respective duplicates.
+
+=item B<-n>
+
+Only print paths of files that have no duplicates.
+
+=back
+
+=head2 Directory Traversal Options
+
+=over
+
+=item B<-a>
+
+Compare all files, including hidden files, such as F<Thumbs.db>
+and F<Icon?>. Also look for files in hidden directories.
+
+=item B<-e>
+
+Ignore empty files.
+
+=item B<-r>, B<-R>
+
+Look for duplicates in subdirectories as well.
+
+=item B<-B>
+
+Only compare binary files.
+
+=item B<-T>
+
+Only compare text files.
+
+=item B<-H>
+
+Follow symbolic links on the command line.
+
+=item B<-L>
+
+Follow all symbolic links.
+
+=item B<-P>
+
+Do not follow symbolic links. This is the default.
+
+=item B<-I> I<glob>
+
+Only compare files matching the pattern I<glob>.
+
+Call C<perldoc Text::Glob> to learn about pattern syntax.
+
+=item B<-X> I<glob>
+
+Do not compare files matching the pattern I<glob>.
+
+Call C<perldoc Text::Glob> to learn about pattern syntax.
+
+=item B<-i>
+
+Ignore the case of glob patterns.
+
+=back
+
+=head2 Miscellaneous Options
+
+=over
+
+=item B<-q>
+
+Do not print the number of duplicated or unique files.
+
+=item B<-0>
+
+Print paths separated by NUL characters; useful for S<C<xargs -0>>.
+
+Implies B<-o> unless an L<output mode|/"Output Modes"> is specified.
+
+=item B<--help>
+
+Print a synopsis of the command and its options.
+
+=item B<--version>
+
+Print version information.
+
+=back
+
+=head1 TUTORIAL
+
+For all of these examples you should bear in mind that, unless B<-p> is
+specified, this utility might identify duplicates that are not, in fact,
+identical but you have to trade off precision against speed of operation.
+
+In this tutorial, the words I<duplicates> and I<copies> are used
+interchangeably.
+
+=head2 Finding Duplicates
+
+Let's start by looking for duplicates in the working directory.
+
+	finddup
+
+You can also check whether a directory contains duplicates of files in
+another directory (or vice versa). Note that this command will also find
+copies of files that are both located in the same directory.
+
+	finddup dir1 dir2
+
+To simply get a list of duplicates (without the corresponding original file),
+call C<finddup -o dir1 dir2> instead. Provided that F<dir2> contains files
+that are also present in F<dir1>, this command will print the paths of the
+duplicated files in F<dir2>.
+
+=head2 Comparing Files
+
+You might want to find out which files are copies of other files.
+
+	finddup file1.xyz file2.xyz file3.xyz
+
+The next example shows how to determine which of two files is the original,
+i.e., the older one of the duplicates, provided that they are perfectly
+identical.
+
+	finddup -pm file1.xyz file2.xyz
+
+=head2 Removing Duplicates
+
+It's easy to pipe the results to another utility, e.g., to delete
+duplicated files. (The switch B<-0> implies B<-o> unless another
+L<output mode|/"Output Modes"> is specified, which comes in handy for
+a simple operation like this.)
+
+	finddup -0 | xargs -0 rm
+
+However, maybe you only want to delete files that already exist somewhere
+else and leave all other duplicates untouched, if there are any. This
+command searches F<dir> recursively, and either does nothing or removes
+F<file.xyz> if a duplicate of it exists anywhere in F<dir>. (It will also
+try to delete the file more than once if F<dir> contains multiple copies
+of it.)
+
+	finddup -rO0 file.xyz dir | xargs -0 rm
+
+You could also delete text files that are almost identical but end (or
+begin) with unnecessary blank lines.
+
+	finddup -TS0 | xargs -0 rm
+
+B<Caution:> In the examples above, I<heuristic> comparison was used, which
+could lead to the removal of files that were not exact copies of any other
+file but that the utility still regarded as duplicates. Only the I<precise
+comparison method> can rule out false positives.
+
+=head2 Finding Unique Files
+
+You might find yourself in a situation where two or more directories contain
+the same files except for a few that have been changed (or corrupted). To get
+a list of these unique files, you can negate the results.
+
+	finddup -n dir1 dir2
+
+Similarly, to make sure that the working directory does not contain a copy of
+a specific file, you can use a command like this.
+
+	finddup -n . file.xyz
+
+=head1 CAVEATS
+
+Multiple hard links to the same file are considered duplicates, for obvious
+reasons. Symbolic links are (at the moment) treated the same way if invoked
+with B<-L> or B<-H>.
+
+Although B<finddup> should work on any platform, it has so far only been
+tested on macOS.
+
+=head1 SEE ALSO
+
+F<diff>(1), F<xargs>(1), L<File::Compare>(3), L<Text::Glob>(3)
+
+=head1 AUTHORS
+
+Bernhard Waldbrunner L<https://github.com/vbwx>
+
+=cut
