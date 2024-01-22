@@ -58,7 +58,7 @@ brew install vbwx/utils/finddup
 
 ### Manual Installation
 
-1. Download and extract the latest release of finddup.
+1. Download and extract the [latest release](/releases/latest) of finddup.
 2. Make sure you have at least version 5.16 of Perl installed.
 3. Run the following commands.
 
