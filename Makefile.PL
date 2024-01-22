@@ -16,10 +16,12 @@ WriteMakefile(
 		'File::Spec' => '3.84',
 		'File::Compare' => '1.1007',
 		'Sort::Key' => '1.33',
+		'Pod::Usage' => '1.69',
 	},
 	BUILD_REQUIRES => {
 		'Pod::Man' => '0',
 		'Pod::Markdown' => '0',
+		'Perl::Critic' => '0',
 	},
 	EXE_FILES => ['finddup'],
 	META_MERGE => {
