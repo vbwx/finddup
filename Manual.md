@@ -4,10 +4,8 @@
 
 # SYNOPSIS
 
-- **finddup**
-
-    \[**-aeiqr0**\] \[**-p** | **-t**\] \[**-l** | **-o** | **-O** | **-s** | **-S** | **-m** | **-M** | **-n**\]
-    \[**-B** | **-T**\] \[**-H** | **-L** | **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 # DESCRIPTION
 
@@ -192,11 +190,11 @@ This manual contains a [tutorial](#tutorial).
 
     Implies **-o** unless an [output mode](#output-modes) is specified.
 
-- **--help**
+- **-\-help**
 
     Print a synopsis of the command and its options.
 
-- **--version**
+- **-\-version**
 
     Print version information.
 
@@ -213,13 +211,17 @@ interchangeably.
 
 Let's start by looking for duplicates in the working directory.
 
-    finddup
+```sh
+finddup
+```
 
 You can also check whether a directory contains duplicates of files in
 another directory (or vice versa). Note that this command will also find
 copies of files that are both located in the same directory.
 
-    finddup dir1 dir2
+```sh
+finddup dir1 dir2
+```
 
 To simply get a list of duplicates (without the corresponding original file),
 call `finddup -o dir1 dir2` instead. Provided that `dir2` contains files
@@ -230,13 +232,17 @@ duplicated files in `dir2`.
 
 You might want to find out which files are copies of other files.
 
-    finddup file1.xyz file2.xyz file3.xyz
+```sh
+finddup file1.xyz file2.xyz file3.xyz
+```
 
 The next example shows how to determine which of two files is the original,
 i.e., the older one of the duplicates, provided that they are perfectly
 identical.
 
-    finddup -pm file1.xyz file2.xyz
+```sh
+finddup -pm file1.xyz file2.xyz
+```
 
 ## Removing Duplicates
 
@@ -245,7 +251,9 @@ duplicated files. (The switch **-0** implies **-o** unless another
 [output mode](#output-modes) is specified, which comes in handy for
 a simple operation like this.)
 
-    finddup -0 | xargs -0 rm
+```sh
+finddup -0 | xargs -0 rm
+```
 
 However, maybe you only want to delete files that already exist somewhere
 else and leave all other duplicates untouched, if there are any. This
@@ -254,12 +262,16 @@ command searches `dir` recursively, and either does nothing or removes
 try to delete the file more than once if `dir` contains multiple copies
 of it.)
 
-    finddup -rO0 file.xyz dir | xargs -0 rm
+```sh
+finddup -rO0 file.xyz dir | xargs -0 rm
+```
 
 You could also delete text files that are almost identical but end (or
 begin) with unnecessary blank lines.
 
-    finddup -TS0 | xargs -0 rm
+```sh
+finddup -TS0 | xargs -0 rm
+```
 
 **Caution:** In the examples above, _heuristic_ comparison was used, which
 could lead to the removal of files that were not exact copies of any other
@@ -272,12 +284,16 @@ You might find yourself in a situation where two or more directories contain
 the same files except for a few that have been changed (or corrupted). To get
 a list of these unique files, you can negate the results.
 
-    finddup -n dir1 dir2
+```sh
+finddup -n dir1 dir2
+```
 
 Similarly, to make sure that the working directory does not contain a copy of
 a specific file, you can use a command like this.
 
-    finddup -n . file.xyz
+```sh
+finddup -n . file.xyz
+```
 
 # CAVEATS
 
