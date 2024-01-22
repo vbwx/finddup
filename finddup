@@ -22,7 +22,7 @@ use constant {
 	EX_USAGE => 2
 };
 
-$Getopt::Std::STANDARD_HELP_VERSION = 1;
+$Getopt::Std::STANDARD_HELP_VERSION = YES;
 $main::VERSION = '1.6.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
@@ -550,13 +550,13 @@ Do not follow symbolic links. This is the default.
 
 Only compare files matching the pattern I<glob>.
 
-Call C<perldoc Text::Glob> to learn about pattern syntax.
+Run C<perldoc Text::Glob> to learn about pattern syntax.
 
 =item B<-X> I<glob>
 
 Do not compare files matching the pattern I<glob>.
 
-Call C<perldoc Text::Glob> to learn about pattern syntax.
+Run C<perldoc Text::Glob> to learn about pattern syntax.
 
 =item B<-i>
 
@@ -601,13 +601,13 @@ interchangeably.
 
 Let's start by looking for duplicates in the working directory.
 
-	finddup
+    finddup
 
 You can also check whether a directory contains duplicates of files in
 another directory (or vice versa). Note that this command will also find
 copies of files that are both located in the same directory.
 
-	finddup dir1 dir2
+    finddup dir1 dir2
 
 To simply get a list of duplicates (without the corresponding original file),
 call C<finddup -o dir1 dir2> instead. Provided that F<dir2> contains files
@@ -618,13 +618,13 @@ duplicated files in F<dir2>.
 
 You might want to find out which files are copies of other files.
 
-	finddup file1.xyz file2.xyz file3.xyz
+    finddup file1.xyz file2.xyz file3.xyz
 
 The next example shows how to determine which of two files is the original,
 i.e., the older one of the duplicates, provided that they are perfectly
 identical.
 
-	finddup -pm file1.xyz file2.xyz
+    finddup -pm file1.xyz file2.xyz
 
 =head2 Removing Duplicates
 
@@ -633,7 +633,7 @@ duplicated files. (The switch B<-0> implies B<-o> unless another
 L<output mode|/"Output Modes"> is specified, which comes in handy for
 a simple operation like this.)
 
-	finddup -0 | xargs -0 rm
+    finddup -0 | xargs -0 rm
 
 However, maybe you only want to delete files that already exist somewhere
 else and leave all other duplicates untouched, if there are any. This
@@ -642,12 +642,12 @@ F<file.xyz> if a duplicate of it exists anywhere in F<dir>. (It will also
 try to delete the file more than once if F<dir> contains multiple copies
 of it.)
 
-	finddup -rO0 file.xyz dir | xargs -0 rm
+    finddup -rO0 file.xyz dir | xargs -0 rm
 
 You could also delete text files that are almost identical but end (or
 begin) with unnecessary blank lines.
 
-	finddup -TS0 | xargs -0 rm
+    finddup -TS0 | xargs -0 rm
 
 B<Caution:> In the examples above, I<heuristic> comparison was used, which
 could lead to the removal of files that were not exact copies of any other
@@ -660,12 +660,12 @@ You might find yourself in a situation where two or more directories contain
 the same files except for a few that have been changed (or corrupted). To get
 a list of these unique files, you can negate the results.
 
-	finddup -n dir1 dir2
+    finddup -n dir1 dir2
 
 Similarly, to make sure that the working directory does not contain a copy of
 a specific file, you can use a command like this.
 
-	finddup -n . file.xyz
+    finddup -n . file.xyz
 
 =head1 CAVEATS
 
@@ -678,7 +678,7 @@ tested on macOS.
 
 =head1 SEE ALSO
 
-F<diff>(1), F<xargs>(1), L<File::Compare>(3), L<Text::Glob>(3)
+L<diff(1)>, L<xargs(1)>, L<File::Compare>, L<Text::Glob>
 
 =head1 AUTHORS
 
