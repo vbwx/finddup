@@ -8,7 +8,7 @@ WriteMakefile(
 	AUTHOR => 'Bernhard Waldbrunner <vbwx01@gmail.com>',
 	VERSION_FROM => 'finddup',
 	ABSTRACT_FROM => 'finddup',
-	LICENSE => 'gpl_3',
+	LICENSE => 'mit',
 	PREREQ_PM => {
 		'Text::Glob' => '0.11',
 		'File::Find' => '1.39',
