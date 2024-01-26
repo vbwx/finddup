@@ -1,5 +1,5 @@
 ![Perl](https://img.shields.io/github/languages/top/vbwx/finddup?style=flat)
-![GPL-3.0 license](https://img.shields.io/github/license/vbwx/finddup?style=flat)
+![MIT license](https://img.shields.io/github/license/vbwx/finddup?style=flat)
 
 # finddup
 
