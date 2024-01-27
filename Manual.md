@@ -83,7 +83,7 @@ This manual contains a [tutorial](#tutorial).
 
 ## Output Modes
 
-- **-l** (lower-case "L")
+- **-l** (lower-case “L”)
 
     Print paths of each file and its duplicate on separate lines.
 
@@ -162,7 +162,7 @@ This manual contains a [tutorial](#tutorial).
 
     Do not follow symbolic links. This is the default.
 
-- **-I** _glob_ (upper-case "i")
+- **-I** _glob_ (upper-case “i”)
 
     Only compare files matching the pattern _glob_.
 
