@@ -60,8 +60,8 @@ brew install vbwx/utils/finddup
 
 1. Download and extract the [latest release](https://github.com/vbwx/finddup/releases/latest) of finddup.
 2. If desired, move the completion script(s) to the appropriate location on your system.
-   - `completion/finddup` might belong in `/etc/bash_completion.d`.
-   - `completion/_finddup` might belong in `/usr/share/zsh/site-functions`.
+   - Move `completion/finddup` to a directory like `/etc/bash_completion.d`.
+   - Move `completion/_finddup` to a directory like `/usr/share/zsh/site-functions`.
 3. Make sure you have at least version 5.16 of Perl installed. (Run `perl -v` to check.)
 4. Run the following command.
 
@@ -96,7 +96,7 @@ Here is how to delete the newest exact copies of files located in different dire
 finddup -pM0 some_folder another_folder | xargs -0 rm -f
 ```
 
-Instead of running `diff` in a loop, finddup can be used to determine which files have changed, even across multiple copies of the original directory.
+Instead of running `diff` in a loop, finddup can be used to determine which files have been changed, even across multiple copies of a directory.
 
 ```sh
 finddup -rn folder-v*/
