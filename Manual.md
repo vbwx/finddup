@@ -83,7 +83,7 @@ This manual contains a [tutorial](#tutorial).
 
 ## Output Modes
 
-- **-l**
+- **-l** (lower-case "L")
 
     Print paths of each file and its duplicate on separate lines.
 
@@ -162,7 +162,7 @@ This manual contains a [tutorial](#tutorial).
 
     Do not follow symbolic links. This is the default.
 
-- **-I** _glob_
+- **-I** _glob_ (upper-case "i")
 
     Only compare files matching the pattern _glob_.
 
@@ -186,7 +186,7 @@ This manual contains a [tutorial](#tutorial).
 
     Do not print the number of duplicated or unique files.
 
-- **-0**
+- **-0** (zero)
 
     Print paths separated by NUL characters; useful for `xargs -0`.
 
@@ -249,7 +249,7 @@ finddup -pm file1.xyz file2.xyz
 ## Removing Duplicates
 
 It's easy to pipe the results to another utility, e.g., to delete
-duplicated files. (The switch **-0** implies **-o** unless another
+duplicated files. (The switch **-0** (zero) implies **-o** unless another
 [output mode](#output-modes) is specified, which comes in handy for
 a simple operation like this.)
 
