@@ -1,6 +1,8 @@
 requires 'Text::Glob', '0.11';
-requires 'File::Find', '1.39';
-requires 'Getopt::Std', '1.13';
-requires 'File::Spec::Functions', '3.84';
-requires 'File::Compare', '1.1007';
 requires 'Sort::Key', '1.33';
+
+on 'develop' => sub {
+	requires 'Pod::Markdown', '3.400';
+	recommends 'Perl::Critic';
+	suggests 'B::Lint';
+};
