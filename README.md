@@ -59,10 +59,20 @@ brew install vbwx/utils/finddup
 ### Manual Installation
 
 1. Download and extract the [latest release](https://github.com/vbwx/finddup/releases/latest) of finddup.
-2. Make sure you have at least version 5.16 of Perl installed.
-3. Run the following commands.
+2. If desired, move the completion script(s) to the appropriate location on your system.
+   - `completion/finddup` might belong in `/etc/bash_completion.d`.
+   - `completion/_finddup` might belong in `/usr/share/zsh/site-functions`.
+3. Make sure you have at least version 5.16 of Perl installed. (Run `perl -v` to check.)
+4. Run the following command.
 
 ```sh
+cpan .
+```
+
+Alternatively, if you have [**cpanminus**](https://metacpan.org/pod/App::cpanminus) installed and want more flexibility with regards to installation directories, you can run these commands:
+
+```sh
+cpanm --installdeps .
 perl Makefile.PL
 make
 make install
