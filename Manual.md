@@ -167,14 +167,14 @@ This manual contains a [tutorial](#tutorial).
     Only compare files matching the pattern _glob_.
 
     Run `perldoc Text::Glob` to learn about pattern syntax.
-    Do not forget to put the pattern in quotes if it contains wildcard characters!
+    Don’t forget to put the pattern in quotes if it contains wildcard characters!
 
 - **-X** _glob_
 
     Do not compare files matching the pattern _glob_.
 
     Run `perldoc Text::Glob` to learn about pattern syntax.
-    Do not forget to put the pattern in quotes if it contains wildcard characters!
+    Don’t forget to put the pattern in quotes if it contains wildcard characters!
 
 - **-i**
 
@@ -211,7 +211,7 @@ interchangeably.
 
 ## Finding Duplicates
 
-Let's start by looking for duplicates in the working directory.
+Let’s start by looking for duplicates in the working directory.
 
 ```sh
 finddup
@@ -248,7 +248,7 @@ finddup -pm file1.xyz file2.xyz
 
 ## Removing Duplicates
 
-It's easy to pipe the results to another utility, e.g., to delete
+It’s easy to pipe the results to another utility, e.g., to delete
 duplicated files. (The switch **-0** (zero) implies **-o** unless another
 [output mode](#output-modes) is specified, which comes in handy for
 a simple operation like this.)
