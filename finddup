@@ -551,12 +551,14 @@ Do not follow symbolic links. This is the default.
 Only compare files matching the pattern I<glob>.
 
 Run C<perldoc Text::Glob> to learn about pattern syntax.
+Do not forget to put the pattern in quotes if it contains wildcard characters!
 
 =item B<-X> I<glob>
 
 Do not compare files matching the pattern I<glob>.
 
 Run C<perldoc Text::Glob> to learn about pattern syntax.
+Do not forget to put the pattern in quotes if it contains wildcard characters!
 
 =item B<-i>
 
