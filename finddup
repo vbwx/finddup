@@ -413,7 +413,7 @@ to have duplicates.
 =item *
 
 The switches B<-s> and B<-S> print the smallest and largest duplicates,
-respectively. Since this only makes sense when used with the trim method,
+respectively. Since this only makes sense when used with the B<trim> method,
 these options automatically activate it.
 
 =item *

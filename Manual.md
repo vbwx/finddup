@@ -47,7 +47,7 @@ lines.
 the _original_ files, i.e., the files that were encountered first and found
 to have duplicates.
 - The switches **-s** and **-S** print the smallest and largest duplicates,
-respectively. Since this only makes sense when used with the trim method,
+respectively. Since this only makes sense when used with the **trim** method,
 these options automatically activate it.
 - The switches **-m** and **-M** print the least and most recently modified
 duplicates, respectively.
