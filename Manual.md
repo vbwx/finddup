@@ -257,7 +257,7 @@ a simple operation like this.)
 finddup -0 | xargs -0 rm
 ```
 
-However, maybe you only want to delete files that already exist somewhere
+However, maybe you only want to delete specific files that already exist somewhere
 else and leave all other duplicates untouched, if there are any. This
 command searches `dir` recursively, and either does nothing or removes
 `file.xyz` if a duplicate of it exists anywhere in `dir`. (It will also
