@@ -31,16 +31,18 @@ my @dir = ();
 my %files = ();
 my $found = 0;
 
-getopts('loOsSmMn0RrqptBTaeiHLPI:X:') or die '', EX_USAGE;
+getopts('loOsSmMn0RrqptBTaeiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M + $opt_n > 1) {
-	die "Mutually exclusive options: ".($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M').
-		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S '), EX_USAGE;
+	pod2usage(-message => "Mutually exclusive options: ".($opt_l && 'l ').($opt_m && 'm ').
+		($opt_M && 'M').($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S '),
+		-exitval => EX_USAGE);
 }
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
-	die "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').($opt_S && 'S'), EX_USAGE;
+	pod2usage(-message => "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').
+		($opt_S && 'S'), -exitval => EX_USAGE);
 }
 if ($opt_B && $opt_T) {
-	die "Mutually exclusive options: B T", EX_USAGE;
+	pod2usage(-message => "Mutually exclusive options: B T", -exitval => EX_USAGE);
 }
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
@@ -314,15 +316,14 @@ sub HELP_MESSAGE {
 }
 
 sub die {
-	my ($msg, $ex) = @_;
-	say STDERR "$0: $msg" if $msg;
-	pod2usage() if $ex == EX_USAGE;
-	exit($ex || 1);
+	my ($msg) = @_;
+	say STDERR "finddup: $msg";
+	exit 1;
 }
 
 sub warn {
 	my ($msg) = @_;
-	say STDERR "$0: $msg";
+	say STDERR "finddup: $msg";
 	return;
 }
 
