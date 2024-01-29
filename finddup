@@ -329,18 +329,18 @@ sub warn {
 
 __END__
 
-=pod
-
 =encoding UTF-8
 
 =head1 NAME
 
-=for comment
+=for MakeMaker
 finddup - Finds duplicated files fast and efficiently.
 
 B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =head1 SYNOPSIS
+
+=for markdown <!--
 
 =over 8
 
@@ -350,6 +350,10 @@ S<[B<-aeiqr0>] [B<-p> | B<-t>] [B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-m> | 
 S<[B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>] [B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
+
+=for markdown -->
+**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 =head1 DESCRIPTION
 
@@ -632,7 +636,7 @@ identical.
 =head2 Removing Duplicates
 
 It's easy to pipe the results to another utility, e.g., to delete
-duplicated files. (The switch B<-0> implies B<-o> unless another
+duplicated files. (The switch B<-0> (zero) implies B<-o> unless another
 L<output mode|/"Output Modes"> is specified, which comes in handy for
 a simple operation like this.)
 
@@ -685,6 +689,11 @@ L<diff(1)>, L<xargs(1)>, L<File::Compare>, L<Text::Glob>
 
 =head1 AUTHORS
 
+=for markdown <!--
+
 Bernhard Waldbrunner L<https://github.com/vbwx>
+
+=for markdown -->
+Bernhard Waldbrunner ([github.com/vbwx](https://github.com/vbwx))
 
 =cut

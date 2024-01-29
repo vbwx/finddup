@@ -4,8 +4,8 @@
 
 # SYNOPSIS
 
-**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 # DESCRIPTION
 
@@ -83,7 +83,7 @@ This manual contains a [tutorial](#tutorial).
 
 ## Output Modes
 
-- **-l** (lower-case “L”)
+- **-l**
 
     Print paths of each file and its duplicate on separate lines.
 
@@ -162,19 +162,19 @@ This manual contains a [tutorial](#tutorial).
 
     Do not follow symbolic links. This is the default.
 
-- **-I** _glob_ (upper-case “i”)
+- **-I** _glob_
 
     Only compare files matching the pattern _glob_.
 
     Run `perldoc Text::Glob` to learn about pattern syntax.
-    Don’t forget to put the pattern in quotes if it contains wildcard characters!
+    Don't forget to put the pattern in quotes if it contains wildcard characters!
 
 - **-X** _glob_
 
     Do not compare files matching the pattern _glob_.
 
     Run `perldoc Text::Glob` to learn about pattern syntax.
-    Don’t forget to put the pattern in quotes if it contains wildcard characters!
+    Don't forget to put the pattern in quotes if it contains wildcard characters!
 
 - **-i**
 
@@ -186,7 +186,7 @@ This manual contains a [tutorial](#tutorial).
 
     Do not print the number of duplicated or unique files.
 
-- **-0** (zero)
+- **-0**
 
     Print paths separated by NUL characters; useful for `xargs -0`.
 
@@ -211,19 +211,15 @@ interchangeably.
 
 ## Finding Duplicates
 
-Let’s start by looking for duplicates in the working directory.
+Let's start by looking for duplicates in the working directory.
 
-```sh
-finddup
-```
+    finddup
 
 You can also check whether a directory contains duplicates of files in
 another directory (or vice versa). Note that this command will also find
 copies of files that are both located in the same directory.
 
-```sh
-finddup dir1 dir2
-```
+    finddup dir1 dir2
 
 To simply get a list of duplicates (without the corresponding original file),
 call `finddup -o dir1 dir2` instead. Provided that `dir2` contains files
@@ -234,46 +230,36 @@ duplicated files in `dir2`.
 
 You might want to find out which files are copies of other files.
 
-```sh
-finddup file1.xyz file2.xyz file3.xyz
-```
+    finddup file1.xyz file2.xyz file3.xyz
 
 The next example shows how to determine which of two files is the original,
 i.e., the older one of the duplicates, provided that they are perfectly
 identical.
 
-```sh
-finddup -pm file1.xyz file2.xyz
-```
+    finddup -pm file1.xyz file2.xyz
 
 ## Removing Duplicates
 
-It’s easy to pipe the results to another utility, e.g., to delete
+It's easy to pipe the results to another utility, e.g., to delete
 duplicated files. (The switch **-0** (zero) implies **-o** unless another
 [output mode](#output-modes) is specified, which comes in handy for
 a simple operation like this.)
 
-```sh
-finddup -0 | xargs -0 rm
-```
+    finddup -0 | xargs -0 rm
 
-However, maybe you only want to delete specific files that already exist somewhere
-else and leave all other duplicates untouched, if there are any. This
-command searches `dir` recursively, and either does nothing or removes
-`file.xyz` if a duplicate of it exists anywhere in `dir`. (It will also
-try to delete the file more than once if `dir` contains multiple copies
-of it.)
+However, maybe you only want to delete specific files that already exist
+somewhere else and leave all other duplicates untouched, if there are any.
+This command searches `dir` recursively, and either does nothing or
+removes `file.xyz` if a duplicate of it exists anywhere in `dir`. (It
+will also try to delete the file more than once if `dir` contains multiple
+copies of it.)
 
-```sh
-finddup -rO0 file.xyz dir | xargs -0 rm
-```
+    finddup -rO0 file.xyz dir | xargs -0 rm
 
 You could also delete text files that are almost identical but end (or
 begin) with unnecessary blank lines.
 
-```sh
-finddup -TS0 | xargs -0 rm
-```
+    finddup -TS0 | xargs -0 rm
 
 **Caution:** In the examples above, _heuristic_ comparison was used, which
 could lead to the removal of files that were not exact copies of any other
@@ -286,16 +272,12 @@ You might find yourself in a situation where two or more directories contain
 the same files except for a few that have been changed (or corrupted). To get
 a list of these unique files, you can negate the results.
 
-```sh
-finddup -n dir1 dir2
-```
+    finddup -n dir1 dir2
 
 Similarly, to make sure that the working directory does not contain a copy of
 a specific file, you can use a command like this.
 
-```sh
-finddup -n . file.xyz
-```
+    finddup -n . file.xyz
 
 # CAVEATS
 
@@ -312,4 +294,4 @@ tested on macOS.
 
 # AUTHORS
 
-Bernhard Waldbrunner [https://github.com/vbwx](https://github.com/vbwx)
+Bernhard Waldbrunner ([github.com/vbwx](https://github.com/vbwx))
