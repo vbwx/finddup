@@ -7,7 +7,6 @@ WriteMakefile(
 	NAME => 'finddup',
 	AUTHOR => 'Bernhard Waldbrunner <vbwx01@gmail.com>',
 	VERSION_FROM => 'finddup',
-	ABSTRACT_FROM => 'finddup',
 	LICENSE => 'mit',
 	PREREQ_PM => {
 		'Text::Glob' => '0.11',

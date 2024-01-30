@@ -333,9 +333,6 @@ __END__
 
 =head1 NAME
 
-=for MakeMaker
-finddup - Finds duplicated files fast and efficiently.
-
 B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =head1 SYNOPSIS
@@ -352,8 +349,10 @@ S<[B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>] [B<-I> I<glob>] [B<-X> I<glob>] [I<fil
 =back
 
 =for markdown -->
-**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\]
+\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\]
+\[_file_ ...\]
 
 =head1 DESCRIPTION
 
