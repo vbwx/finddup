@@ -616,9 +616,9 @@ copies of files that are both located in the same directory.
     finddup dir1 dir2
 
 To simply get a list of duplicates (without the corresponding original file),
-call C<finddup -o dir1 dir2> instead. Provided that F<dir2> contains files
-that are also present in F<dir1>, this command will print the paths of the
-duplicated files in F<dir2>.
+call C<finddup -o dir1 dir2> instead. Provided that F<dir2> contains copies
+of files from F<dir1>, this command will print the paths of the duplicated
+files in F<dir2>.
 
 =head2 Comparing Files
 
