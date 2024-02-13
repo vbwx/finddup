@@ -4,8 +4,10 @@
 
 # SYNOPSIS
 
-**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\] \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+**finddup** \[**-aehiqr0**\] \[**-p** \| **-t**\]
+\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\]
+\[_file_ ...\]
 
 # DESCRIPTION
 
@@ -35,23 +37,26 @@ byte for byte, so it can be guaranteed that only perfect duplicates are found.
     This method is the slowest one unless all files are different sizes, in which
     case it is actually faster than the trim method.
 
+Note that multiple hard links to the same file are considered duplicates
+unless the **-h** option is specified.
+
 There are various output modes that are mostly useful for subsequent
 processing of the results.
 
 - By default, copies and their originals are shown in pairs. The format of
 this mode might change in the future and is therefore not suited for automatic
 processing or piping.
-- The switch **-l** prints the paths of each file and its duplicate on separate
+- The **-l** option prints the paths of each file and its duplicate on separate
 lines.
-- The switch **-o** prints all copies of other files, whereas **-O** prints
+- The **-o** option prints all copies of other files, whereas **-O** prints
 the _original_ files, i.e., the files that were encountered first and found
 to have duplicates.
-- The switches **-s** and **-S** print the smallest and largest duplicates,
+- The **-s** and **-S** options print the smallest and largest duplicates,
 respectively. Since this only makes sense when used with the **trim** method,
 these options automatically activate it.
-- The switches **-m** and **-M** print the least and most recently modified
+- The **-m** and **-M** options print the least and most recently modified
 duplicates, respectively.
-- The switch **-n** negates the results, meaning that only the paths of files
+- The **-n** option negates the results, meaning that only the paths of files
 that do not have duplicates are printed.
 
 As for non-option arguments, **finddup** differentiates between files and
@@ -97,7 +102,7 @@ This manual contains a [tutorial](#tutorial).
     Only print paths of files that have at least one duplicate.
     This is equivalent to the right path in the default output mode.
 
-    This switch might cause paths to be printed multiple times.
+    This option might cause paths to be printed multiple times.
 
 - **-s**
 
@@ -182,6 +187,10 @@ This manual contains a [tutorial](#tutorial).
 
 ## Miscellaneous Options
 
+- **-h**
+
+    Do not regard multiple hard links to the same file as duplicates.
+
 - **-q**
 
     Do not print the number of duplicated or unique files.
@@ -222,9 +231,9 @@ copies of files that are both located in the same directory.
     finddup dir1 dir2
 
 To simply get a list of duplicates (without the corresponding original file),
-call `finddup -o dir1 dir2` instead. Provided that `dir2` contains files
-that are also present in `dir1`, this command will print the paths of the
-duplicated files in `dir2`.
+call `finddup -o dir1 dir2` instead. Provided that `dir2` contains copies
+of files from `dir1`, this command will print the paths of the duplicated
+files in `dir2`.
 
 ## Comparing Files
 
@@ -241,7 +250,7 @@ identical.
 ## Removing Duplicates
 
 It's easy to pipe the results to another utility, e.g., to delete
-duplicated files. (The switch **-0** (zero) implies **-o** unless another
+duplicated files. (The **-0** (zero) option implies **-o** unless another
 [output mode](#output-modes) is specified, which comes in handy for
 a simple operation like this.)
 
@@ -280,10 +289,6 @@ a specific file, you can use a command like this.
     finddup -n . file.xyz
 
 # CAVEATS
-
-Multiple hard links to the same file are considered duplicates, for obvious
-reasons. Symbolic links are (at the moment) treated the same way if invoked
-with **-L** or **-H**.
 
 Although **finddup** should work on any platform, it has so far only been
 tested on macOS.

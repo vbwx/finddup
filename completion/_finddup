@@ -8,6 +8,7 @@ _arguments -S -s \
 	'(-r -R)'{-r,-R}'[look for duplicates in subdirectories as well]' \
 	'-I+[only compare files matching the pattern GLOB]:glob:_files' \
 	'-X+[do not compare files matching the pattern GLOB]:glob:_files' \
+	'-h[do not regard multiple hard links to the same file as duplicates]' \
 	'-i[ignore case of glob patterns]' \
 	'-q[do not print the number of duplicated or unique files]' \
 	'-0[print paths with NUL characters as separators]' \

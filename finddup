@@ -5,7 +5,9 @@ use v5.16;
 use Getopt::Std;
 use File::Find;
 use File::Compare;
-use File::Spec::Functions;
+use File::stat;
+use File::Spec::Functions qw(abs2rel canonpath splitpath file_name_is_absolute);
+use Cwd qw(getcwd realpath);
 use Sort::Key::Natural qw(natsort natkeysort);
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
@@ -15,23 +17,26 @@ use constant {
 	NO => 0,
 	YES => 1,
 	PATH => 0,
-	SIZE => 1,
-	COMPARE => 1,
+	REALPATH => 1,
 	INDEX => 1,
-	TIME => 2,
+	SIZE => 2,
+	COMPARE => 2,
+	INODE => 3,
+	TIME => 4,
 	EX_USAGE => 2
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.6.1';
+$main::VERSION = '1.7';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
+our $opt_h;
 
 my @dir = ();
 my %files = ();
 my $found = 0;
 
-getopts('loOsSmMn0RrqptBTaeiHLPI:X:') or pod2usage(EX_USAGE);
+getopts('loOsSmMn0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M + $opt_n > 1) {
 	pod2usage(-message => "Mutually exclusive options: ".($opt_l && 'l ').($opt_m && 'm ').
 		($opt_M && 'M').($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S '),
@@ -48,7 +53,7 @@ $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
 $opt_m ||= $opt_M;
 $opt_r ||= $opt_R;
-$opt_t = YES if $opt_s;
+$opt_t ||= $opt_s;
 $Text::Glob::strict_leading_dot = NO if $opt_a;
 if ($opt_P) {
 	$opt_H = $opt_L = NO;
@@ -69,29 +74,39 @@ else {
 }
 
 for (@ARGV) {
-	next if -l && !$opt_H;
-	$_ = canonpath($_);
+	if (-l) {
+		next unless $opt_H;
+		$_ = (file_name_is_absolute($_) ? realpath($_) : abs2rel(realpath($_)));
+	}
+	else {
+		$_ = canonpath($_);
+	}
 	if (-f) {
-		my ($s, $t);
-		$t = -T _ unless $opt_T && $opt_B;
+		my $t = -T _ unless $opt_T && $opt_B;
 		next unless (!$t && $opt_B) || ($t && $opt_T);
-		$s = -s _;
+		my $s = -s _;
 		next if $opt_e && !$s;
+		my $p = realpath($_);
+		my $stat = File::stat::populate(CORE::stat(_));
+		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or next;
-			push(@{$files{$digest}}, ($opt_m ? [$_, $s, -M _] : [$_, $s])); # [PATH, SIZE, TIME]
+			push(@{$files{$digest}}, ($opt_m ? [$_, $p, $s, $inode, -M _] : [$_, $p, $s, $inode]));
+			# [PATH, REALPATH, SIZE, INODE, TIME]
 		}
 		else {
-			push(@{$files{$s}}, ($opt_m ? [$_, YES, -M _] : [$_, YES])); # [PATH, COMPARE, TIME]
+			push(@{$files{$s}}, ($opt_m ? [$_, $p, YES, $inode, -M $stat] : [$_, $p, YES, $inode]));
+			# [PATH, REALPATH, COMPARE, INODE, TIME]
 		}
 	}
 	elsif (-d _) {
-		push(@dir, (-l ? readlink($_) : $_));
+		push(@dir, $_);
 	}
 	else {
 		die "$_: No such file or directory";
 	}
 }
+my $CWD = getcwd();
 my $all = !%files;
 @dir = ('.') unless @dir || %files;
 
@@ -100,45 +115,66 @@ find({
 	follow_skip => 2,
 	preprocess => sub {natsort(@_)},
 	wanted => sub {
-		my ($f, $s, $t, $name);
-		$f = ($opt_i ? fc $_ : $_);
-		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) || (!$opt_L && -l) ||
+		my $f = ($opt_i ? fc : $_);
+		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) ||
 			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
 			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
-		$t = -T _ unless $opt_T && $opt_B;
+		my $t = -T _ unless $opt_T && $opt_B;
 		return unless (!$t && $opt_B) || ($t && $opt_T);
-		$s = -s _;
+		my $s = -s _;
 		return if $opt_e && !$s;
-		$name = $File::Find::name =~ s/^\.\///r;
-		if ($opt_t) {
-			my $digest = trim_digest($_, $s) or return;
-			push(@{$files{$digest}}, ($opt_m ? [$name, $s, -M _] : [$name, $s])) if $all || $files{$digest};
-			# [PATH, SIZE, TIME]
+		my $name;
+		if (-l) {
+			return unless $opt_L;
+			(undef, undef, $f) = splitpath($File::Find::fullname);
+			return if !$opt_a && $f =~ /^[.~]|\r$|^Thumbs\.db$/;
+			$f = fc $f if $opt_i;
+			return if ($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f));
+			$name = (file_name_is_absolute($File::Find::name) ?
+				$File::Find::fullname : abs2rel($File::Find::fullname, $CWD));
 		}
 		else {
-			push(@{$files{$s}}, ($opt_m ? [$name, $all, -M _] : [$name, $all])) if $all || $files{$s};
-			# [PATH, COMPARE, TIME]
+			$name = $File::Find::name =~ s/^\.\///r;
+		}
+		my $p = realpath($_);
+		my $stat = stat $_;
+		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
+		if ($opt_t) {
+			my $digest = trim_digest($_, $s) or return;
+			push(@{$files{$digest}}, ($opt_m ? [$name, $p, $s, $inode, -M] :
+				[$name, $p, $s, $inode])) if $all || $files{$digest};
+			# [PATH, REALPATH, SIZE, INODE, TIME]
+		}
+		else {
+			push(@{$files{$s}}, ($opt_m ? [$name, $p, $all, $inode, -M $stat] :
+				[$name, $p, $all, $inode])) if $all || $files{$s};
+			# [PATH, REALPATH, COMPARE, INODE, TIME]
 		}
 	}
 }, @dir);
 
+
+@{$files{$_}} = do {my %x; grep {!$x{@{$_}[REALPATH]}++} sort_matches($files{$_})} for keys %files;
+
 if ($opt_p) {
 	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$s}}};
+		my @f = @{$files{$s}};
 		if (@f > 1) {
-			sort_matches(\@f);
 			for my $i (0 .. $#f-1) {
 				if ($f[$i][COMPARE]) {
 					for ($i+1 .. $#f) {
-						if ($f[$_] && compare($f[$_][PATH], $f[$i][PATH]) == 0) {
-							if ($opt_n) {
-								delete @{$files{$s}}[$_, $i];
-							}
-							else {
-								print_dup($f[$_][PATH], $f[$i][PATH]);
-								$found++;
+						my $same = ($f[$_][INODE] && $f[$_][INODE] eq $f[$i][INODE]);
+						if ($f[$_] && ($same || compare($f[$_][REALPATH], $f[$i][REALPATH]) == 0)) {
+							unless ($opt_h && $same) {
+								if ($opt_n) {
+									delete @{$files{$s}}[$_, $i];
+								}
+								else {
+									print_dup($f[$_][PATH], $f[$i][PATH]);
+									$found++;
+								}
 							}
 							delete $f[$_];
 						}
@@ -151,40 +187,31 @@ if ($opt_p) {
 		}
 	}
 }
-elsif ($opt_t) {
-	for (natkeysort {$files{$_}[0][PATH]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$_}}};
-		if (@f > 1) {
-			if ($opt_n) {
-				delete $files{$_};
-			}
-			else {
-				sort_matches(\@f);
-				print_dup($f[$_][PATH], $f[0][PATH]) for 1 .. $#f;
-				$found += @f - 1;
-			}
-		}
-	}
-}
 else {
 	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
-		my @f = do {my %x; grep {!$x{@{$_}[PATH]}++} @{$files{$s}}};
+		my @f = @{$files{$s}};
 		if (@f > 1) {
-			sort_matches(\@f);
-			my %m = ();
-			for (0 .. $#f) {
-				my $digest = digest($f[$_][PATH], $s) or next;
-				if ($m{$digest}) {
-					if ($opt_n) {
-						delete @{$files{$s}}[$_, $m{$digest}[INDEX]];
+			for my $i (0, 1) {
+				my %m = ();
+				for (0 .. $#f) {
+					next unless $f[$_];
+					my $d = ($i ? ($opt_t ? $s : digest($f[$_][REALPATH], $s)) : $f[$_][INODE])
+						or next;
+					if ($m{$d}) {
+						unless ($opt_h && !$i) {
+							if ($opt_n) {
+								delete @{$files{$s}}[$_, $m{$d}[INDEX]];
+							}
+							else {
+								print_dup($f[$_][PATH], $m{$d}[PATH]);
+								$found++;
+							}
+						}
+						delete $f[$_];
 					}
-					else {
-						print_dup($f[$_][PATH], $m{$digest}[PATH]);
-						$found++;
+					elsif ($opt_t || $f[$_][COMPARE]) {
+						$m{$d} = [$f[$_][PATH], $_]; # [PATH, INDEX]
 					}
-				}
-				elsif ($f[$_][COMPARE]) {
-					$m{$digest} = [$f[$_][PATH], $_]; # [PATH, INDEX]
 				}
 			}
 		}
@@ -192,8 +219,8 @@ else {
 }
 if ($opt_n) {
 	my @f;
-	push(@f, do {my %x; map {@{$_}[PATH]} grep {$_ && !$x{@{$_}[PATH]}++} @{$files{$_}}}) for keys %files;
-	print $_ for natsort(@f);
+	push(@f, map {@{$_}[PATH]} grep {defined} @{$files{$_}}) for keys %files;
+	print for natsort(@f);
 	$found = scalar @f;
 }
 
@@ -228,18 +255,18 @@ sub print_info {
 sub sort_matches {
 	my ($ref) = @_;
 	if ($opt_M) {
-		@{$ref} = sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
+		return sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
 	}
 	elsif ($opt_m) {
-		@{$ref} = sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$ref};
+		return sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$ref};
 	}
 	elsif ($opt_S) {
-		@{$ref} = sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$ref};
+		return sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$ref};
 	}
 	elsif ($opt_s) {
-		@{$ref} = sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$ref};
+		return sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$ref};
 	}
-	return;
+	return @{$ref};
 }
 
 sub digest {
@@ -343,13 +370,13 @@ B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =item B<finddup>
 
-S<[B<-aeiqr0>] [B<-p> | B<-t>] [B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-m> | B<-M> | B<-n>]>
+S<[B<-aehiqr0>] [B<-p> | B<-t>] [B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-m> | B<-M> | B<-n>]>
 S<[B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>] [B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
 
 =for markdown -->
-**finddup** \[**-aeiqr0**\] \[**-p** \| **-t**\]
+**finddup** \[**-aehiqr0**\] \[**-p** \| **-t**\]
 \[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
 \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\]
 \[_file_ ...\]
@@ -392,6 +419,9 @@ case it is actually faster than the trim method.
 
 =back
 
+Note that multiple hard links to the same file are considered duplicates
+unless the B<-h> option is specified.
+
 There are various output modes that are mostly useful for subsequent
 processing of the results.
 
@@ -405,29 +435,29 @@ processing or piping.
 
 =item *
 
-The switch B<-l> prints the paths of each file and its duplicate on separate
+The B<-l> option prints the paths of each file and its duplicate on separate
 lines.
 
 =item *
 
-The switch B<-o> prints all copies of other files, whereas B<-O> prints
+The B<-o> option prints all copies of other files, whereas B<-O> prints
 the I<original> files, i.e., the files that were encountered first and found
 to have duplicates.
 
 =item *
 
-The switches B<-s> and B<-S> print the smallest and largest duplicates,
+The B<-s> and B<-S> options print the smallest and largest duplicates,
 respectively. Since this only makes sense when used with the B<trim> method,
 these options automatically activate it.
 
 =item *
 
-The switches B<-m> and B<-M> print the least and most recently modified
+The B<-m> and B<-M> options print the least and most recently modified
 duplicates, respectively.
 
 =item *
 
-The switch B<-n> negates the results, meaning that only the paths of files
+The B<-n> option negates the results, meaning that only the paths of files
 that do not have duplicates are printed.
 
 =back
@@ -481,7 +511,7 @@ This is equivalent to the left path in the default output mode.
 Only print paths of files that have at least one duplicate.
 This is equivalent to the right path in the default output mode.
 
-This switch might cause paths to be printed multiple times.
+This option might cause paths to be printed multiple times.
 
 =item B<-s>
 
@@ -574,6 +604,10 @@ Ignore the case of glob patterns.
 
 =over
 
+=item B<-h>
+
+Do not regard multiple hard links to the same file as duplicates.
+
 =item B<-q>
 
 Do not print the number of duplicated or unique files.
@@ -635,7 +669,7 @@ identical.
 =head2 Removing Duplicates
 
 It's easy to pipe the results to another utility, e.g., to delete
-duplicated files. (The switch B<-0> (zero) implies B<-o> unless another
+duplicated files. (The B<-0> (zero) option implies B<-o> unless another
 L<output mode|/"Output Modes"> is specified, which comes in handy for
 a simple operation like this.)
 
@@ -674,10 +708,6 @@ a specific file, you can use a command like this.
     finddup -n . file.xyz
 
 =head1 CAVEATS
-
-Multiple hard links to the same file are considered duplicates, for obvious
-reasons. Symbolic links are (at the moment) treated the same way if invoked
-with B<-L> or B<-H>.
 
 Although B<finddup> should work on any platform, it has so far only been
 tested on macOS.
