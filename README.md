@@ -42,7 +42,7 @@ For further processing of the results, you can choose between six output modes:
 - Oldest/newest duplicates
 - Only unique files
 
-There are many more options that let you control which files are ignored, which files are to be compared, how the utility should handle symbolic links, and whether to look for files in subdirectories.
+There are many more options that let you control which files are ignored, which files should be compared, how the utility should handle symbolic links, and whether to look for files in subdirectories.
 
 ## Installation
 
