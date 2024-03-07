@@ -24,8 +24,12 @@ _arguments -S -s \
 		'-O[only print paths of files that have at least one duplicate]' \
 		'(-p)-s[only print paths of smaller duplicates]' \
 		'(-p)-S[only print paths of larger duplicates]' \
-		'-m[only print paths of older duplicates]' \
-		'-M[only print paths of newer duplicates]' \
+		'-c[only print paths of least recently changed duplicates]' \
+		'-C[only print paths of most recently changed duplicates]' \
+		'-m[only print paths of least recently modified duplicates]' \
+		'-M[only print paths of most recently modified duplicates]' \
+		'-v[only print paths of least recently accessed duplicates]' \
+		'-V[only print paths of most recently accessed duplicates]' \
 		'-n[only print paths of files that have no duplicates]' \
 	+ '(symlinks)' \
 		'-H[follow symbolic links on the command line]' \

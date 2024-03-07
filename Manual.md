@@ -4,10 +4,11 @@
 
 # SYNOPSIS
 
-**finddup** \[**-aehiqr0**\] \[**-p** \| **-t**\]
-\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\]
-\[_file_ ...\]
+**finddup**
+\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
+**-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
+\[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
+\[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 # DESCRIPTION
 
@@ -55,7 +56,8 @@ to have duplicates.
 respectively. Since this only makes sense when used with the **trim** method,
 these options automatically activate it.
 - The **-m** and **-M** options print the least and most recently modified
-duplicates, respectively.
+duplicates, respectively. **-c** and **-C** do the same but they look at inode
+change time, whereas **-v** and **-V** look at access time.
 - The **-n** option negates the results, meaning that only the paths of files
 that do not have duplicates are printed.
 
@@ -118,15 +120,35 @@ This manual contains a [tutorial](#tutorial).
 
     Implies **-t**.
 
+- **-c**
+
+    Only print paths of files whose inode change time is older than
+    or equal to the time of their respective duplicates.
+
+- **-C**
+
+    Only print paths of files whose inode change time is newer than
+    or equal to the time of their respective duplicates.
+
 - **-m**
 
-    Only print paths of files whose modification date is older than
-    or equal to the date of their respective duplicates.
+    Only print paths of files whose modification time is older than
+    or equal to the time of their respective duplicates.
 
 - **-M**
 
-    Only print paths of files whose modification date is newer than
-    or equal to the date of their respective duplicates.
+    Only print paths of files whose modification time is newer than
+    or equal to the time of their respective duplicates.
+
+- **-v**
+
+    Only print paths of files whose access time is older than
+    or equal to the time of their respective duplicates.
+
+- **-V**
+
+    Only print paths of files whose access time is newer than
+    or equal to the time of their respective duplicates.
 
 - **-n**
 

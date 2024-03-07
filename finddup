@@ -27,20 +27,21 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.7';
+$main::VERSION = '1.8';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
-our $opt_h;
+our ($opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
 
 my @dir = ();
 my %files = ();
 my $found = 0;
 
-getopts('loOsSmMn0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
-if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_m + $opt_M + $opt_n > 1) {
-	pod2usage(-message => "Mutually exclusive options: ".($opt_l && 'l ').($opt_m && 'm ').
-		($opt_M && 'M').($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S '),
-		-exitval => EX_USAGE);
+getopts('loOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
+if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
+	$opt_v + $opt_V + $opt_n > 1) {
+	pod2usage(-message => "Mutually exclusive options: ".($opt_c && 'c ').($opt_C && 'C ').
+		($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M ').($opt_o && 'o ').($opt_O && 'O ').
+		($opt_s && 's ').($opt_S && 'S ').($opt_s && 'v ').($opt_S && 'V'), -exitval => EX_USAGE);
 }
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
 	pod2usage(-message => "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').
@@ -51,7 +52,9 @@ if ($opt_B && $opt_T) {
 }
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
+$opt_c ||= $opt_C;
 $opt_m ||= $opt_M;
+$opt_v ||= $opt_V;
 $opt_r ||= $opt_R;
 $opt_t ||= $opt_s;
 $Text::Glob::strict_leading_dot = NO if $opt_a;
@@ -67,7 +70,7 @@ if ($opt_i) {
 }
 if ($opt_0) {
 	$\ = "\0";
-	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_m || $opt_n;
+	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_c || $opt_m || $opt_v || $opt_n;
 }
 else {
 	$\ = "\n";
@@ -89,13 +92,14 @@ for (@ARGV) {
 		my $p = realpath($_);
 		my $stat = File::stat::populate(CORE::stat(_));
 		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
+		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or next;
-			push(@{$files{$digest}}, ($opt_m ? [$_, $p, $s, $inode, -M _] : [$_, $p, $s, $inode]));
+			push(@{$files{$digest}}, [$_, $p, $s, $inode, $time]);
 			# [PATH, REALPATH, SIZE, INODE, TIME]
 		}
 		else {
-			push(@{$files{$s}}, ($opt_m ? [$_, $p, YES, $inode, -M $stat] : [$_, $p, YES, $inode]));
+			push(@{$files{$s}}, [$_, $p, YES, $inode, $time]);
 			# [PATH, REALPATH, COMPARE, INODE, TIME]
 		}
 	}
@@ -141,15 +145,14 @@ find({
 		my $p = realpath($_);
 		my $stat = stat $_;
 		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
+		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
 			my $digest = trim_digest($_, $s) or return;
-			push(@{$files{$digest}}, ($opt_m ? [$name, $p, $s, $inode, -M] :
-				[$name, $p, $s, $inode])) if $all || $files{$digest};
+			push(@{$files{$digest}}, [$name, $p, $s, $inode, $time]) if $all || $files{$digest};
 			# [PATH, REALPATH, SIZE, INODE, TIME]
 		}
 		else {
-			push(@{$files{$s}}, ($opt_m ? [$name, $p, $all, $inode, -M $stat] :
-				[$name, $p, $all, $inode])) if $all || $files{$s};
+			push(@{$files{$s}}, [$name, $p, $all, $inode, $time]) if $all || $files{$s};
 			# [PATH, REALPATH, COMPARE, INODE, TIME]
 		}
 	}
@@ -231,7 +234,7 @@ exit !$found;
 
 sub print_dup {
 	my ($dup, $orig) = @_;
-	if ($opt_o || $opt_s || $opt_m) {
+	if ($opt_o || $opt_s || $opt_c || $opt_m || $opt_v) {
 		print $dup;
 	}
 	elsif ($opt_O) {
@@ -254,11 +257,11 @@ sub print_info {
 
 sub sort_matches {
 	my ($ref) = @_;
-	if ($opt_M) {
-		return sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
-	}
-	elsif ($opt_m) {
+	if ($opt_C || $opt_M || $opt_V) {
 		return sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$ref};
+	}
+	elsif ($opt_c || $opt_m || $opt_v) {
+		return sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
 	}
 	elsif ($opt_S) {
 		return sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$ref};
@@ -370,16 +373,18 @@ B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =item B<finddup>
 
-S<[B<-aehiqr0>] [B<-p> | B<-t>] [B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-m> | B<-M> | B<-n>]>
-S<[B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>] [B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
+S<[B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
+S<[B<-aehiqr0>] [B<-p> | B<-t>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
+S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
 
 =for markdown -->
-**finddup** \[**-aehiqr0**\] \[**-p** \| **-t**\]
-\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-m** \| **-M** \| **-n**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\]
-\[_file_ ...\]
+**finddup**
+\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
+**-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
+\[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
+\[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 =head1 DESCRIPTION
 
@@ -453,7 +458,8 @@ these options automatically activate it.
 =item *
 
 The B<-m> and B<-M> options print the least and most recently modified
-duplicates, respectively.
+duplicates, respectively. B<-c> and B<-C> do the same but they look at inode
+change time, whereas B<-v> and B<-V> look at access time.
 
 =item *
 
@@ -527,15 +533,35 @@ the size of their respective duplicates.
 
 Implies B<-t>.
 
+=item B<-c>
+
+Only print paths of files whose inode change time is older than
+or equal to the time of their respective duplicates.
+
+=item B<-C>
+
+Only print paths of files whose inode change time is newer than
+or equal to the time of their respective duplicates.
+
 =item B<-m>
 
-Only print paths of files whose modification date is older than
-or equal to the date of their respective duplicates.
+Only print paths of files whose modification time is older than
+or equal to the time of their respective duplicates.
 
 =item B<-M>
 
-Only print paths of files whose modification date is newer than
-or equal to the date of their respective duplicates.
+Only print paths of files whose modification time is newer than
+or equal to the time of their respective duplicates.
+
+=item B<-v>
+
+Only print paths of files whose access time is older than
+or equal to the time of their respective duplicates.
+
+=item B<-V>
+
+Only print paths of files whose access time is newer than
+or equal to the time of their respective duplicates.
 
 =item B<-n>
 

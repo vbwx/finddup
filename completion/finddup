@@ -7,7 +7,7 @@ _finddup() {
 	_get_comp_words_by_ref cur prev
 
 	local optgroups=(
-		" -l -o -O -s -S -m -M -n"
+		" -l -o -O -s -S -c -C -m -M -v -V -n"
 		" -B -T"
 		" -R -r"
 		" -p -t -s -S"

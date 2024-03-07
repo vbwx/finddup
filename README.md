@@ -93,7 +93,7 @@ finddup -ra0 | xargs -0 du -ch --
 Here is how to delete the newest exact copies of files located in different directories (a.k.a. keep only the originals):
 
 ```sh
-finddup -pM0 some_folder another_folder | xargs -0 rm -f
+finddup -pC0 some_folder another_folder | xargs -0 rm -f
 ```
 
 Instead of running `diff` in a loop, finddup can be used to determine which files have been changed, even across multiple copies of a directory.
