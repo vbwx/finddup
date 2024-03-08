@@ -40,8 +40,9 @@ getopts('loOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
 	$opt_v + $opt_V + $opt_n > 1) {
 	pod2usage(-message => "Mutually exclusive options: ".($opt_c && 'c ').($opt_C && 'C ').
-		($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M ').($opt_o && 'o ').($opt_O && 'O ').
-		($opt_s && 's ').($opt_S && 'S ').($opt_v && 'v ').($opt_V && 'V'), -exitval => EX_USAGE);
+		($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M ').($opt_n && 'n ').
+		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S ').
+		($opt_v && 'v ').($opt_V && 'V'), -exitval => EX_USAGE);
 }
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
 	pod2usage(-message => "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').
