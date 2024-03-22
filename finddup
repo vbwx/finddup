@@ -27,7 +27,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.8';
+$main::VERSION = '1.8.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
@@ -167,10 +167,11 @@ if ($opt_p) {
 		my @f = @{$files{$s}};
 		if (@f > 1) {
 			for my $i (0 .. $#f-1) {
-				if ($f[$i][COMPARE]) {
-					for ($i+1 .. $#f) {
+				for ($i+1 .. $#f) {
+					if ($f[$i][COMPARE] || $f[$_][COMPARE]) {
 						my $same = ($f[$_][INODE] && $f[$_][INODE] eq $f[$i][INODE]);
-						if ($f[$_] && ($same || compare($f[$_][REALPATH], $f[$i][REALPATH]) == 0)) {
+						if (@{$f[$_]} && @{$f[$i]} &&
+							($same || compare($f[$_][REALPATH], $f[$i][REALPATH]) == 0)) {
 							unless ($opt_h && $same) {
 								if ($opt_n) {
 									delete @{$files{$s}}[$_, $i];
@@ -184,9 +185,6 @@ if ($opt_p) {
 						}
 					}
 				}
-				elsif ($f[$i]) {
-					last;
-				}
 			}
 		}
 	}
@@ -198,7 +196,7 @@ else {
 			for my $i (0, 1) {
 				my %m = ();
 				for (0 .. $#f) {
-					next unless $f[$_];
+					next unless @{$f[$_]};
 					my $d = ($i ? ($opt_t ? $s : digest($f[$_][REALPATH], $s)) : $f[$_][INODE])
 						or next;
 					if ($m{$d}) {
@@ -611,15 +609,9 @@ Do not follow symbolic links. This is the default.
 
 Only compare files matching the pattern I<glob>.
 
-Run C<perldoc Text::Glob> to learn about pattern syntax.
-Don't forget to put the pattern in quotes if it contains wildcard characters!
-
 =item B<-X> I<glob>
 
 Do not compare files matching the pattern I<glob>.
-
-Run C<perldoc Text::Glob> to learn about pattern syntax.
-Don't forget to put the pattern in quotes if it contains wildcard characters!
 
 =item B<-i>
 
@@ -733,6 +725,28 @@ Similarly, to make sure that the working directory does not contain a copy of
 a specific file, you can use a command like this.
 
     finddup -n . file.xyz
+
+=head2 Including and Excluding Filenames
+
+You can specify which files should be compared or skipped during directory
+traversal. Let's say you don't want backup files to be compared.
+
+    finddup -X "*.bak"
+
+You could also, e.g., look for duplicated video and audio files in the working
+directory and all its subdirectories recursively. (The pattern in the command
+below matches filenames with the extensions F<mp3>, F<mp4>, F<m4a>, F<m4v>,
+F<mkv>, etc. The B<-i> option makes patterns case-insensitive.)
+
+    finddup -ri -I "*.{mp[34],m?[av]}"
+
+You can even combine inclusion and exclusion patterns. This command compares
+all JPEG files except the ones whose filenames contain F<_thumb>.
+
+    finddup -ri -I "*.{jpg,jpeg}" -X "*_thumb.*"
+
+Consult the documentation of L<Text::Glob> for a detailed explanation of
+pattern syntax.
 
 =head1 CAVEATS
 

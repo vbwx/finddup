@@ -193,15 +193,9 @@ This manual contains a [tutorial](#tutorial).
 
     Only compare files matching the pattern _glob_.
 
-    Run `perldoc Text::Glob` to learn about pattern syntax.
-    Don't forget to put the pattern in quotes if it contains wildcard characters!
-
 - **-X** _glob_
 
     Do not compare files matching the pattern _glob_.
-
-    Run `perldoc Text::Glob` to learn about pattern syntax.
-    Don't forget to put the pattern in quotes if it contains wildcard characters!
 
 - **-i**
 
@@ -309,6 +303,28 @@ Similarly, to make sure that the working directory does not contain a copy of
 a specific file, you can use a command like this.
 
     finddup -n . file.xyz
+
+## Including and Excluding Filenames
+
+You can specify which files should be compared or skipped during directory
+traversal. Let's say you don't want backup files to be compared.
+
+    finddup -X "*.bak"
+
+You could also, e.g., look for duplicated video and audio files in the working
+directory and all its subdirectories recursively. (The pattern in the command
+below matches filenames with the extensions `mp3`, `mp4`, `m4a`, `m4v`,
+`mkv`, etc. The **-i** option makes patterns case-insensitive.)
+
+    finddup -ri -I "*.{mp[34],m?[av]}"
+
+You can even combine inclusion and exclusion patterns. This command compares
+all JPEG files except the ones whose filenames contain `_thumb`.
+
+    finddup -ri -I "*.{jpg,jpeg}" -X "*_thumb.*"
+
+Consult the documentation of [Text::Glob](https://metacpan.org/pod/Text%3A%3AGlob) for a detailed explanation of
+pattern syntax.
 
 # CAVEATS
 
