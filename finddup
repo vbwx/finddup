@@ -735,13 +735,13 @@ traversal. Let's say you don't want backup files to be compared.
 
 You could also, e.g., look for duplicated video and audio files in the working
 directory and all its subdirectories recursively. (The pattern in the command
-below matches filenames with the extensions F<mp3>, F<mp4>, F<m4a>, F<m4v>,
-F<mkv>, etc. The B<-i> option makes patterns case-insensitive.)
+below matches filenames with the extensions C<mp3>, C<mp4>, C<m4a>, C<m4v>,
+C<mkv>, etc. The B<-i> option makes patterns case-insensitive.)
 
     finddup -ri -I "*.{mp[34],m?[av]}"
 
 You can even combine inclusion and exclusion patterns. This command compares
-all JPEG files except the ones whose filenames contain F<_thumb>.
+all JPEG files except the ones whose filenames contain C<_thumb>.
 
     finddup -ri -I "*.{jpg,jpeg}" -X "*_thumb.*"
 
