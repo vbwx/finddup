@@ -18,7 +18,6 @@ use constant {
 	YES => 1,
 	PATH => 0,
 	REALPATH => 1,
-	INDEX => 1,
 	SIZE => 2,
 	COMPARE => 2,
 	INODE => 3,
@@ -27,7 +26,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.8.1';
+$main::VERSION = '1.8.2';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
@@ -199,20 +198,22 @@ else {
 					next unless @{$f[$_]};
 					my $d = ($i ? ($opt_t ? $s : digest($f[$_][REALPATH], $s)) : $f[$_][INODE])
 						or next;
-					if ($m{$d}) {
-						unless ($opt_h && !$i) {
-							if ($opt_n) {
-								delete @{$files{$s}}[$_, $m{$d}[INDEX]];
+					if (defined $m{$d}) {
+						if ($opt_t || $f[$m{$d}][COMPARE] || $f[$_][COMPARE]) {
+							unless ($opt_h && !$i) {
+								if ($opt_n) {
+									delete @{$files{$s}}[$_, $m{$d}];
+								}
+								else {
+									print_dup($f[$_][PATH], $f[$m{$d}][PATH]);
+									$found++;
+								}
 							}
-							else {
-								print_dup($f[$_][PATH], $m{$d}[PATH]);
-								$found++;
-							}
+							delete $f[$_];
 						}
-						delete $f[$_];
 					}
-					elsif ($opt_t || $f[$_][COMPARE]) {
-						$m{$d} = [$f[$_][PATH], $_]; # [PATH, INDEX]
+					else {
+						$m{$d} = $_;
 					}
 				}
 			}
