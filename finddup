@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use strict;
-use v5.16;
+use 5.018;
 use Getopt::Std;
 use File::Find;
 use File::Compare;
@@ -17,22 +17,23 @@ use constant {
 	NO => 0,
 	YES => 1,
 	PATH => 0,
-	REALPATH => 1,
-	SIZE => 2,
-	COMPARE => 2,
-	INODE => 3,
-	TIME => 4,
+	SIZE => 1,
+	COMPARE => 1,
+	TIME => 2,
 	EX_USAGE => 2
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.8.2';
+$main::VERSION = '1.9';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
 
 my @dir = ();
 my %files = ();
+my %paths = ();
+my %inodes = ();
+my %dupes = ();
 my $found = 0;
 
 getopts('loOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
@@ -84,23 +85,37 @@ for (@ARGV) {
 	else {
 		$_ = canonpath($_);
 	}
+	my $p = realpath($_);
+	next if $paths{$p};
+	$paths{$p} = YES;
 	if (-f) {
 		my $t = -T _ unless $opt_T && $opt_B;
 		next unless (!$t && $opt_B) || ($t && $opt_T);
 		my $s = -s _;
 		next if $opt_e && !$s;
-		my $p = realpath($_);
+		my $dup = undef;
 		my $stat = File::stat::populate(CORE::stat(_));
-		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
+		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
+			next if $opt_h;
+			$dup = $inodes{$stat->dev}{$stat->ino};
+		}
 		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
-			my $digest = trim_digest($_, $s) or next;
-			push(@{$files{$digest}}, [$_, $p, $s, $inode, $time]);
-			# [PATH, REALPATH, SIZE, INODE, TIME]
+			my $digest = ($dup || trim_digest($_, $s)) or next;
+			push(@{$dupes{$digest}}, [$_, $s, $time]);
+			# [PATH, SIZE, TIME]
+			$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
 		}
 		else {
-			push(@{$files{$s}}, [$_, $p, YES, $inode, $time]);
-			# [PATH, REALPATH, COMPARE, INODE, TIME]
+			my $e = [$_, YES, $time];
+			# [PATH, COMPARE, TIME]
+			if ($dup) {
+				add_dup($dup, $e);
+			}
+			else {
+				push(@{$files{$s}}, $e);
+				$inodes{$stat->dev}{$stat->ino} = $e if $stat->nlink > 1;
+			}
 		}
 	}
 	elsif (-d _) {
@@ -111,8 +126,8 @@ for (@ARGV) {
 	}
 }
 my $CWD = getcwd();
-my $all = !%files;
-@dir = ('.') unless @dir || %files;
+my $all = !%files && !%dupes;
+@dir = ('.') if !@dir && $all;
 
 find({
 	follow => $opt_L,
@@ -125,13 +140,16 @@ find({
 			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
-		my $t = -T _ unless $opt_T && $opt_B;
-		return unless (!$t && $opt_B) || ($t && $opt_T);
+		my $p = realpath($_);
+		return if $paths{$p};
+		$paths{$p} = YES;
 		my $s = -s _;
 		return if $opt_e && !$s;
+		my $t = -T _ unless $opt_T && $opt_B;
+		return unless (!$t && $opt_B) || ($t && $opt_T);
 		my $name;
 		if (-l) {
-			return unless $opt_L;
+			return unless $opt_L && $File::Find::fullname;
 			(undef, undef, $f) = splitpath($File::Find::fullname);
 			return if !$opt_a && $f =~ /^[.~]|\r$|^Thumbs\.db$/;
 			$f = fc $f if $opt_i;
@@ -142,89 +160,129 @@ find({
 		else {
 			$name = $File::Find::name =~ s/^\.\///r;
 		}
-		my $p = realpath($_);
+		my $dup = undef;
 		my $stat = stat $_;
-		my $inode = ($stat->nlink > 1 ? $stat->dev.'#'.$stat->ino : '');
+		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
+			return if $opt_h;
+			$dup = $inodes{$stat->dev}{$stat->ino};
+		}
 		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
-			my $digest = trim_digest($_, $s) or return;
-			push(@{$files{$digest}}, [$name, $p, $s, $inode, $time]) if $all || $files{$digest};
-			# [PATH, REALPATH, SIZE, INODE, TIME]
+			my $digest = ($dup || trim_digest($_, $s)) or return;
+			push(@{$dupes{$digest}}, [$name, $s, $time]) if $all || $dupes{$digest};
+			# [PATH, SIZE, TIME]
+			$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
 		}
 		else {
-			push(@{$files{$s}}, [$name, $p, $all, $inode, $time]) if $all || $files{$s};
-			# [PATH, REALPATH, COMPARE, INODE, TIME]
+			my $e = [$name, $all, $time];
+			# [PATH, COMPARE, TIME]
+			if ($dup) {
+				add_dup($dup, $e) if $all || $dupes{$$dup[PATH]};
+			}
+			else {
+				push(@{$files{$s}}, $e) if $all || $files{$s};
+				$inodes{$stat->dev}{$stat->ino} = $e if $stat->nlink > 1;
+			}
 		}
 	}
 }, @dir);
 
-
-@{$files{$_}} = do {my %x; grep {!$x{@{$_}[REALPATH]}++} sort_matches($files{$_})} for keys %files;
+%inodes = %paths = ();
 
 if ($opt_p) {
-	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
-		my @f = @{$files{$s}};
-		if (@f > 1) {
-			for my $i (0 .. $#f-1) {
-				for ($i+1 .. $#f) {
-					if ($f[$i][COMPARE] || $f[$_][COMPARE]) {
-						my $same = ($f[$_][INODE] && $f[$_][INODE] eq $f[$i][INODE]);
-						if (@{$f[$_]} && @{$f[$i]} &&
-							($same || compare($f[$_][REALPATH], $f[$i][REALPATH]) == 0)) {
-							unless ($opt_h && $same) {
-								if ($opt_n) {
-									delete @{$files{$s}}[$_, $i];
-								}
-								else {
-									print_dup($f[$_][PATH], $f[$i][PATH]);
-									$found++;
-								}
+	while (my ($s, $f) = each %files) {
+		if (@$f > 1) {
+			for my $i (0 .. $#$f-1) {
+				if ($$f[$i][COMPARE]) {
+					my $del = NO;
+					for my $j ($i+1 .. $#$f) {
+						if (defined $$f[$j][PATH] && compare($$f[$i][PATH], $$f[$j][PATH]) == 0) {
+							if ($opt_n) {
+								$del = YES;
 							}
-							delete $f[$_];
+							else {
+								add_dup($$f[$i], $$f[$j]);
+							}
+							delete $$f[$j];
 						}
 					}
+					delete $$f[$i] if $del;
 				}
 			}
 		}
 	}
 }
 else {
-	for my $s (natkeysort {$files{$_}[0][PATH]} keys %files) {
-		my @f = @{$files{$s}};
-		if (@f > 1) {
-			for my $i (0, 1) {
-				my %m = ();
-				for (0 .. $#f) {
-					next unless @{$f[$_]};
-					my $d = ($i ? ($opt_t ? $s : digest($f[$_][REALPATH], $s)) : $f[$_][INODE])
-						or next;
-					if (defined $m{$d}) {
-						if ($opt_t || $f[$m{$d}][COMPARE] || $f[$_][COMPARE]) {
-							unless ($opt_h && !$i) {
-								if ($opt_n) {
-									delete @{$files{$s}}[$_, $m{$d}];
-								}
-								else {
-									print_dup($f[$_][PATH], $f[$m{$d}][PATH]);
-									$found++;
-								}
-							}
-							delete $f[$_];
-						}
+	while (my ($s, $f) = each %files) {
+		if (@$f > 1) {
+			my %m = ();
+			while (each @$f) {
+				my $d = digest($$f[$_][PATH], $s) or next;
+				if (defined $m{$d}) {
+					if ($opt_n) {
+						delete @$f[$m{$d}, $_];
 					}
 					else {
-						$m{$d} = $_;
+						add_dup($$f[$m{$d}], $$f[$_]);
 					}
+				}
+				elsif ($$f[$_][COMPARE]) {
+					$m{$d} = $_;
 				}
 			}
 		}
 	}
 }
+
 if ($opt_n) {
 	my @f;
-	push(@f, map {@{$_}[PATH]} grep {defined} @{$files{$_}}) for keys %files;
+	if ($opt_t) {
+		while (each %dupes) {
+			if (@{$dupes{$_}} == 1) {
+				push(@f, $dupes{$_}[0][PATH]);
+			}
+		}
+	}
+	else {
+		push(@f, map {$$_[PATH]} grep {$_ && @$_ && !$dupes{$$_[PATH]}} @{$files{$_}})
+			while each %files;
+	}
 	print for natsort(@f);
 	$found = scalar @f;
+}
+else {
+	for (natkeysort {$dupes{$_}[0][PATH]} keys %dupes) {
+		my $d = $dupes{$_};
+		next unless @$d > 1;
+		if ($opt_C || $opt_M || $opt_V) {
+			@$d = sort {$$a[TIME] <=> $$b[TIME]} @$d;
+		}
+		elsif ($opt_c || $opt_m || $opt_v) {
+			@$d = sort {$$b[TIME] <=> $$a[TIME]} @$d;
+		}
+		elsif ($opt_S) {
+			@$d = sort {$$a[SIZE] <=> $$b[SIZE]} @$d;
+		}
+		elsif ($opt_s) {
+			@$d = sort {$$b[SIZE] <=> $$a[SIZE]} @$d;
+		}
+		if ($opt_o || $opt_s || $opt_c || $opt_m || $opt_v) {
+			print $$d[$_][PATH] for 1 .. $#$d;
+		}
+		elsif ($opt_O) {
+			print $$d[0][PATH];
+		}
+		elsif ($opt_l) {
+			for (1 .. $#$d) {
+				print $$d[$_][PATH];
+				print $$d[0][PATH];
+			}
+		}
+		else {
+			print $$d[$_][PATH].' '.($opt_p ? '==' : '~~').' '.$$d[0][PATH] for 1 .. $#$d;
+		}
+		$found += @$d-1;
+	}
 }
 
 print_info(($found ? "\n$found" : 'No'), ($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
@@ -232,44 +290,16 @@ print_info(($found ? "\n$found" : 'No'), ($found && !$opt_n ? ($opt_p ? ' exact'
 exit !$found;
 
 
-sub print_dup {
-	my ($dup, $orig) = @_;
-	if ($opt_o || $opt_s || $opt_c || $opt_m || $opt_v) {
-		print $dup;
-	}
-	elsif ($opt_O) {
-		print $orig;
-	}
-	elsif ($opt_l) {
-		print $dup;
-		print $orig;
+sub add_dup {
+	my ($orig, $dup) = @_;
+	$dupes{$$orig[PATH]} = [$orig] unless $dupes{$$orig[PATH]};
+	if ($dupes{$$dup[PATH]}) {
+		push(@{$dupes{$$orig[PATH]}}, @{$dupes{$$dup[PATH]}});
+		delete $dupes{$$dup[PATH]};
 	}
 	else {
-		print $dup.' '.($opt_p ? '==' : '~~').' '.$orig;
+		push(@{$dupes{$$orig[PATH]}}, $dup);
 	}
-	return;
-}
-
-sub print_info {
-	say STDERR @_ unless $opt_q;
-	return;
-}
-
-sub sort_matches {
-	my ($ref) = @_;
-	if ($opt_C || $opt_M || $opt_V) {
-		return sort {@{$a}[TIME] <=> @{$b}[TIME]} @{$ref};
-	}
-	elsif ($opt_c || $opt_m || $opt_v) {
-		return sort {@{$b}[TIME] <=> @{$a}[TIME]} @{$ref};
-	}
-	elsif ($opt_S) {
-		return sort {@{$a}[SIZE] <=> @{$b}[SIZE]} @{$ref};
-	}
-	elsif ($opt_s) {
-		return sort {@{$b}[SIZE] <=> @{$a}[SIZE]} @{$ref};
-	}
-	return @{$ref};
 }
 
 sub digest {
@@ -332,6 +362,11 @@ sub trim_digest {
 		warn "$path: Permission denied";
 		return '';
 	}
+}
+
+sub print_info {
+	say STDERR @_ unless $opt_q;
+	return;
 }
 
 sub pod2usage {
@@ -517,8 +552,6 @@ This is equivalent to the left path in the default output mode.
 Only print paths of files that have at least one duplicate.
 This is equivalent to the right path in the default output mode.
 
-This option might cause paths to be printed multiple times.
-
 =item B<-s>
 
 Only print paths of files whose size is smaller than or equal to
@@ -598,9 +631,13 @@ Only compare text files.
 
 Follow symbolic links on the command line.
 
+This option has no effect on Microsoft Windows.
+
 =item B<-L>
 
 Follow all symbolic links.
+
+This option has no effect on Microsoft Windows.
 
 =item B<-P>
 
@@ -727,7 +764,7 @@ a specific file, you can use a command like this.
 
     finddup -n . file.xyz
 
-=head2 Including and Excluding Filenames
+=head2 Including and Excluding Files
 
 You can specify which files should be compared or skipped during directory
 traversal. Let's say you don't want backup files to be compared.

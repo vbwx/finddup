@@ -62,7 +62,7 @@ brew install vbwx/utils/finddup
 2. If desired, move the completion script(s) to the appropriate location on your system.
    - Move `completion/finddup` to a directory like `/etc/bash_completion.d`.
    - Move `completion/_finddup` to a directory like `/usr/share/zsh/site-functions`.
-3. Make sure you have at least version 5.16 of Perl installed. (Run `perl -v` to check.)
+3. Make sure you have at least version 5.18 of Perl installed. (Run `perl -v` to check.)
 4. Run the following command.
 
 ```sh

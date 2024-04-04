@@ -104,8 +104,6 @@ This manual contains a [tutorial](#tutorial).
     Only print paths of files that have at least one duplicate.
     This is equivalent to the right path in the default output mode.
 
-    This option might cause paths to be printed multiple times.
-
 - **-s**
 
     Only print paths of files whose size is smaller than or equal to
@@ -181,9 +179,13 @@ This manual contains a [tutorial](#tutorial).
 
     Follow symbolic links on the command line.
 
+    This option has no effect on Microsoft Windows.
+
 - **-L**
 
     Follow all symbolic links.
+
+    This option has no effect on Microsoft Windows.
 
 - **-P**
 
@@ -304,7 +306,7 @@ a specific file, you can use a command like this.
 
     finddup -n . file.xyz
 
-## Including and Excluding Filenames
+## Including and Excluding Files
 
 You can specify which files should be compared or skipped during directory
 traversal. Let's say you don't want backup files to be compared.
