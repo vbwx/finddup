@@ -19,6 +19,7 @@ _arguments -S -s \
 		'(-s -S)-p[compare the entire contents of files]' \
 		'-t[trim repeating characters from the beginning and end of files]' \
 	+ '(mode)' \
+		'-d[print path of each file with a list of paths of its duplicates]' \
 		'-l[print paths of each file and its duplicate on separate lines]' \
 		'-o[only print paths of files that are duplicates of other files]' \
 		'-O[only print paths of files that have at least one duplicate]' \

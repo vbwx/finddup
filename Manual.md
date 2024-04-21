@@ -5,7 +5,7 @@
 # SYNOPSIS
 
 **finddup**
-\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
+\[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
 **-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
 \[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
 \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
@@ -44,12 +44,14 @@ unless the **-h** option is specified.
 There are various output modes that are mostly useful for subsequent
 processing of the results.
 
-- By default, copies and their originals are shown in pairs. The format of
+- By default, duplicates and their originals are shown in pairs. The format of
 this mode might change in the future and is therefore not suited for automatic
 processing or piping.
+- The **-d** option prints the path of each file along with a tab-indented list
+of the paths of its duplicates.
 - The **-l** option prints the paths of each file and its duplicate on separate
 lines.
-- The **-o** option prints all copies of other files, whereas **-O** prints
+- The **-o** option prints all duplicates of other files, whereas **-O** prints
 the _original_ files, i.e., the files that were encountered first and found
 to have duplicates.
 - The **-s** and **-S** options print the smallest and largest duplicates,
@@ -70,7 +72,7 @@ depending on the output mode.
 
 When invoked without non-option arguments, **finddup** looks for duplicates
 in the working directory. When files are passed as arguments, **finddup**
-only looks for copies of these files.
+only looks for duplicates of these files.
 
 This manual contains a [tutorial](#tutorial).
 
@@ -90,6 +92,14 @@ This manual contains a [tutorial](#tutorial).
 
 ## Output Modes
 
+- **-d**
+
+    Print path of each file with a list of paths of its duplicates.
+
+    If combined with the **-0** (zero) option, paths are separated by NUL
+    characters, whereas lists of paths (of the duplicated file and its
+    duplicates) are separated by two NUL characters.
+
 - **-l**
 
     Print paths of each file and its duplicate on separate lines.
@@ -97,12 +107,12 @@ This manual contains a [tutorial](#tutorial).
 - **-o**
 
     Only print paths of files that are duplicates of other files.
-    This is equivalent to the left path in the default output mode.
+    This corresponds to the path on the left in the default output mode.
 
 - **-O**
 
     Only print paths of files that have at least one duplicate.
-    This is equivalent to the right path in the default output mode.
+    This corresponds to the path on the right in the default output mode.
 
 - **-s**
 

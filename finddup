@@ -24,10 +24,10 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.9';
+$main::VERSION = '1.10';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
-our ($opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
+our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
 
 my @dir = ();
 my %files = ();
@@ -36,11 +36,11 @@ my %inodes = ();
 my %dupes = ();
 my $found = 0;
 
-getopts('loOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
+getopts('dloOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
-	$opt_v + $opt_V + $opt_n > 1) {
+	$opt_v + $opt_V + $opt_d + $opt_n > 1) {
 	pod2usage(-message => "Mutually exclusive options: ".($opt_c && 'c ').($opt_C && 'C ').
-		($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M ').($opt_n && 'n ').
+		($opt_d && 'd ').($opt_l && 'l ').($opt_m && 'm ').($opt_M && 'M ').($opt_n && 'n ').
 		($opt_o && 'o ').($opt_O && 'O ').($opt_s && 's ').($opt_S && 'S ').
 		($opt_v && 'v ').($opt_V && 'V'), -exitval => EX_USAGE);
 }
@@ -71,7 +71,7 @@ if ($opt_i) {
 }
 if ($opt_0) {
 	$\ = "\0";
-	$opt_o = YES unless $opt_O || $opt_l || $opt_s || $opt_c || $opt_m || $opt_v || $opt_n;
+	$opt_o = YES unless $opt_O || $opt_d || $opt_l || $opt_s || $opt_c || $opt_m || $opt_v || $opt_n;
 }
 else {
 	$\ = "\n";
@@ -238,9 +238,7 @@ if ($opt_n) {
 	my @f;
 	if ($opt_t) {
 		while (each %dupes) {
-			if (@{$dupes{$_}} == 1) {
-				push(@f, $dupes{$_}[0][PATH]);
-			}
+			push(@f, $dupes{$_}[0][PATH]) if @{$dupes{$_}} == 1;
 		}
 	}
 	else {
@@ -278,14 +276,20 @@ else {
 				print $$d[0][PATH];
 			}
 		}
+		elsif ($opt_d) {
+			print $$d[0][PATH];
+			print(($opt_0 ? '' : "\t").$$d[$_][PATH]) for 1 .. $#$d;
+			print '';
+		}
 		else {
 			print $$d[$_][PATH].' '.($opt_p ? '==' : '~~').' '.$$d[0][PATH] for 1 .. $#$d;
 		}
-		$found += @$d-1;
+		$found += @$d - 1;
 	}
 }
 
-print_info(($found ? "\n$found" : 'No'), ($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
+print_info(($found ? ($opt_d || $opt_0 ? '' : "\n").$found : 'No'),
+	($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
 	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'));
 exit !$found;
 
@@ -408,7 +412,7 @@ B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =item B<finddup>
 
-S<[B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
+S<[B<-d> | B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
 S<[B<-aehiqr0>] [B<-p> | B<-t>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
 S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
@@ -416,7 +420,7 @@ S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =for markdown -->
 **finddup**
-\[**-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
+\[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
 **-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
 \[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
 \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
@@ -469,9 +473,14 @@ processing of the results.
 
 =item *
 
-By default, copies and their originals are shown in pairs. The format of
+By default, duplicates and their originals are shown in pairs. The format of
 this mode might change in the future and is therefore not suited for automatic
 processing or piping.
+
+=item *
+
+The B<-d> option prints the path of each file along with a tab-indented list
+of the paths of its duplicates.
 
 =item *
 
@@ -480,7 +489,7 @@ lines.
 
 =item *
 
-The B<-o> option prints all copies of other files, whereas B<-O> prints
+The B<-o> option prints all duplicates of other files, whereas B<-O> prints
 the I<original> files, i.e., the files that were encountered first and found
 to have duplicates.
 
@@ -512,7 +521,7 @@ depending on the output mode.
 
 When invoked without non-option arguments, B<finddup> looks for duplicates
 in the working directory. When files are passed as arguments, B<finddup>
-only looks for copies of these files.
+only looks for duplicates of these files.
 
 This manual contains a L<tutorial|/TUTORIAL>.
 
@@ -538,6 +547,14 @@ before comparing them.
 
 =over
 
+=item B<-d>
+
+Print path of each file with a list of paths of its duplicates.
+
+If combined with the B<-0> (zero) option, paths are separated by NUL
+characters, whereas lists of paths (of the duplicated file and its
+duplicates) are separated by two NUL characters.
+
 =item B<-l>
 
 Print paths of each file and its duplicate on separate lines.
@@ -545,12 +562,12 @@ Print paths of each file and its duplicate on separate lines.
 =item B<-o>
 
 Only print paths of files that are duplicates of other files.
-This is equivalent to the left path in the default output mode.
+This corresponds to the path on the left in the default output mode.
 
 =item B<-O>
 
 Only print paths of files that have at least one duplicate.
-This is equivalent to the right path in the default output mode.
+This corresponds to the path on the right in the default output mode.
 
 =item B<-s>
 
