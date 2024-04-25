@@ -45,8 +45,8 @@ if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt
 		($opt_v && 'v ').($opt_V && 'V'), -exitval => EX_USAGE);
 }
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
-	pod2usage(-message => "Mutually exclusive options: p ".($opt_t && 't ').($opt_s && 's').
-		($opt_S && 'S'), -exitval => EX_USAGE);
+	pod2usage(-message => "Mutually exclusive options: p ".($opt_S && 'S ').($opt_s && 's ').
+		($opt_t && 't'), -exitval => EX_USAGE);
 }
 if ($opt_B && $opt_T) {
 	pod2usage(-message => "Mutually exclusive options: B T", -exitval => EX_USAGE);
