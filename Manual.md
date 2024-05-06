@@ -96,9 +96,9 @@ This manual contains a [tutorial](#tutorial).
 
     Print path of each file with a list of paths of its duplicates.
 
-    If combined with the **-0** (zero) option, paths are separated by NUL
-    characters, whereas lists of paths (of the duplicated file and its
-    duplicates) are separated by two NUL characters.
+    If combined with the **-0** (zero) option, each path is terminated with a NUL
+    character, while the last path in the list of duplicates is terminated with
+    two NUL characters.
 
 - **-l**
 
