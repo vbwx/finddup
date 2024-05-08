@@ -33,9 +33,10 @@ What is considered a match depends on the chosen method; three methods are avail
 - *Heuristic comparison with trimming* (useful for text and video files, or any files with padding bytes at the end)
 - *Precise comparison* (slow but accurate)
 
-For further processing of the results, you can choose between six output modes:
+For further processing of the results, you can choose between seven output modes:
 
 - One match per line
+- Original with a list of its duplicates
 - Duplicate and original each on a separate line
 - Only duplicates/originals
 - Smallest/largest duplicates
