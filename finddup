@@ -24,7 +24,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.10';
+$main::VERSION = '1.10.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
@@ -282,7 +282,12 @@ else {
 			print '';
 		}
 		else {
-			print $$d[$_][PATH].($opt_p ? ' == ' : ' ~~ ').$$d[0][PATH] for 1 .. $#$d;
+			my $stat0 = stat $$d[0][PATH];
+			for (1 .. $#$d) {
+				my $stat = stat $$d[$_][PATH];
+				print $$d[$_][PATH].($stat->dev == $stat0->dev && $stat->ino == $stat0->ino ?
+					' === ' : ($opt_p ? ' == ' : ' ~~ ')).$$d[0][PATH];
+			}
 		}
 		$found += @$d - 1;
 	}
@@ -473,9 +478,13 @@ processing of the results.
 
 =item *
 
-By default, duplicates and their originals are shown in pairs. The format of
-this mode might change in the future and is therefore not suited for automatic
-processing or piping.
+By default, duplicates and their originals are shown in pairs, separated by
+one of the following equality signs: C<~~> means that the files are probably
+duplicates; C<==> indicates that the file contents are identical; C<===>
+means that their inode numbers are identical.
+
+The format of this mode might change in the future and is therefore not suited
+for automatic processing or piping.
 
 =item *
 

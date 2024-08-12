@@ -44,9 +44,14 @@ unless the **-h** option is specified.
 There are various output modes that are mostly useful for subsequent
 processing of the results.
 
-- By default, duplicates and their originals are shown in pairs. The format of
-this mode might change in the future and is therefore not suited for automatic
-processing or piping.
+- By default, duplicates and their originals are shown in pairs, separated by
+one of the following equality signs: `~~` means that the files are probably
+duplicates; `==` indicates that the file contents are identical; `===`
+means that their inode numbers are identical.
+
+    The format of this mode might change in the future and is therefore not suited
+    for automatic processing or piping.
+
 - The **-d** option prints the path of each file along with a tab-indented list
 of the paths of its duplicates.
 - The **-l** option prints the paths of each file and its duplicate on separate
