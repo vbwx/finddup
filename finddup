@@ -24,7 +24,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.10.1';
+$main::VERSION = '1.10.2';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
@@ -35,6 +35,7 @@ my %paths = ();
 my %inodes = ();
 my %dupes = ();
 my $found = 0;
+my $skipped = NO;
 
 getopts('dloOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
@@ -79,27 +80,47 @@ else {
 
 for (@ARGV) {
 	if (-l) {
-		next unless $opt_H;
+		unless ($opt_H) {
+			warn "$_: Symbolic link skipped";
+			$skipped = YES;
+			next;
+		}
 		$_ = (file_name_is_absolute($_) ? realpath($_) : abs2rel(realpath($_)));
 	}
 	else {
 		$_ = canonpath($_);
 	}
 	my $p = realpath($_);
-	next if $paths{$p};
-	$paths{$p} = YES;
+	if (defined $paths{$p}) {
+		warn "'$paths{$p}' and '$_' are identical";
+		next;
+	}
+	$paths{$p} = $_;
 	if (-f) {
-		my $t = -T _ unless $opt_T && $opt_B;
-		next unless (!$t && $opt_B) || ($t && $opt_T);
-		my $s = -s _;
-		next if $opt_e && !$s;
-		my $dup = undef;
-		my $stat = File::stat::populate(CORE::stat(_));
+		my ($t, $s, $dup, $stat, $time);
+		$t = -T _ unless $opt_T && $opt_B;
+		unless ((!$t && $opt_B) || ($t && $opt_T)) {
+			warn "$_: ".($t ? "Text" : "Binary")." file skipped";
+			$skipped = YES;
+			next;
+		}
+		$s = -s _;
+		if ($opt_e && !$s) {
+			warn "$_: Empty file skipped";
+			$skipped = YES;
+			next;
+		}
+		$dup = undef;
+		$stat = File::stat::populate(CORE::stat(_));
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
-			next if $opt_h;
+			if ($opt_h) {
+				warn "'".($opt_t ? $dupes{$inodes{$stat->dev}{$stat->ino}}[0][PATH] :
+					$inodes{$stat->dev}{$stat->ino}[PATH])."' and '$_' are identical";
+				next;
+			}
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
-		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
+		$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
 			my $digest = ($dup || trim_digest($_, $s)) or next;
 			push(@{$dupes{$digest}}, [$_, $s, $time]);
@@ -126,28 +147,28 @@ for (@ARGV) {
 	}
 }
 my $CWD = getcwd();
-my $all = !%files && !%dupes;
-@dir = ('.') if !@dir && $all;
+my $all = !$skipped && !%files && !%dupes;
+@dir = ('.') if !$skipped && !@dir && $all;
 
 find({
 	follow => $opt_L,
 	follow_skip => 2,
 	preprocess => sub {natsort(@_)},
 	wanted => sub {
-		my $f = ($opt_i ? fc : $_);
+		my ($f, $p, $s, $t, $name, $dup, $stat, $time);
+		$f = ($opt_i ? fc : $_);
 		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) ||
 			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
 			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
-		my $p = realpath($_);
+		$p = realpath($_);
 		return if $paths{$p};
 		$paths{$p} = YES;
-		my $s = -s _;
+		$s = -s _;
 		return if $opt_e && !$s;
-		my $t = -T _ unless $opt_T && $opt_B;
+		$t = -T _ unless $opt_T && $opt_B;
 		return unless (!$t && $opt_B) || ($t && $opt_T);
-		my $name;
 		if (-l) {
 			return unless $opt_L && $File::Find::fullname;
 			(undef, undef, $f) = splitpath($File::Find::fullname);
@@ -160,13 +181,13 @@ find({
 		else {
 			$name = $File::Find::name =~ s/^\.\///r;
 		}
-		my $dup = undef;
-		my $stat = stat $_;
+		$dup = undef;
+		$stat = stat $_;
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 			return if $opt_h;
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
-		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
+		$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
 			my $digest = ($dup || trim_digest($_, $s)) or return;
 			push(@{$dupes{$digest}}, [$name, $s, $time]) if $all || $dupes{$digest};
