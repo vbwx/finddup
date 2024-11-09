@@ -242,6 +242,11 @@ This manual contains a [tutorial](#tutorial).
 
     Print version information.
 
+# EXIT STATUS
+
+The **finddup** utility exits 0 on success, 1 if no duplicates are found,
+and greater than 0 if an error occurs.
+
 # TUTORIAL
 
 For all of these examples you should bear in mind that, unless **-p** is

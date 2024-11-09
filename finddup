@@ -732,6 +732,11 @@ Print version information.
 
 =back
 
+=head1 EXIT STATUS
+
+The B<finddup> utility exits 0 on success, 1 if no duplicates are found,
+and greater than 0 if an error occurs.
+
 =head1 TUTORIAL
 
 For all of these examples you should bear in mind that, unless B<-p> is
