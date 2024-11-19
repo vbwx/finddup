@@ -26,7 +26,7 @@
 
 ## Description
 
-This utility compares the contents of files to check if any of them match.
+finddup is a command-line utility which compares the contents of files to check if any of them match.
 What is considered a match depends on the chosen method; three methods are available:
 
 - *Heuristic comparison* (very fast)
