@@ -605,9 +605,6 @@ before comparing them.
 
 =head2 Comparison Accuracy
 
-These options have no effect when the precise comparison method (B<-p>)
-is used.
-
 =over
 
 =item B<-2>

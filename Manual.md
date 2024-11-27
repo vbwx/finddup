@@ -103,9 +103,6 @@ This manual contains a [tutorial](#tutorial).
 
 ## Comparison Accuracy
 
-These options have no effect when the precise comparison method (**-p**)
-is used.
-
 - **-2**
 
     Use twice as many samples for heuristic comparison.
