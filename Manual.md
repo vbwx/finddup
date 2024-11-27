@@ -7,8 +7,8 @@
 **finddup**
 \[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
 **-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
-\[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
-\[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+\[**-aehiqrx0**\] \[**-p** \| **-t**\] \[**-2** \| **-4** \| **-8**\] \[**-B** \| **-T**\]
+\[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 # DESCRIPTION
 
@@ -16,11 +16,16 @@ This utility compares the contents of files to check if any of them match.
 What is considered a match depends on the chosen method.
 
 - By default, files are compared **heuristically**, which means that files are
-considered duplicates if they are the same size, and if a few bytes
-of different parts of the file contents are identical to their counterparts.
+considered duplicates if they are the same size, and if a few bytes of
+different parts of the file contents (samples) are identical to their
+counterparts.
 
     This method is very fast and accurate enough for most use cases, but it
     can produce false positives (or false negatives when invoked with **-n**).
+    The number of samples that are compared can be increased with the **-2**,
+    **-4**, and **-8** options, which can reduce the number of false matches but
+    also increase the run time. The sample size can be increased with the
+    **-x** option.
 
 - The **trim** method (**-t**) also employs heuristic comparison as
 described above, but it ignores repeating characters at the start and
@@ -88,12 +93,34 @@ This manual contains a [tutorial](#tutorial).
 - **-p**
 
     Compare the entire contents of files.
-    This is slower but only finds files that are perfect duplicates.
+    This is slower but only considers files to be duplicates if they are perfect
+    matches.
 
 - **-t**
 
     Trim repeating characters from the beginning and end of file contents
     before comparing them.
+
+## Comparison Accuracy
+
+These options have no effect when the precise comparison method (**-p**)
+is used.
+
+- **-2**
+
+    Use twice as many samples for heuristic comparison.
+
+- **-4**
+
+    Use four times as many samples for heuristic comparison.
+
+- **-8**
+
+    Use eight times as many samples for heuristic comparison.
+
+- **-x**
+
+    Use three times as many bytes per sample for heuristic comparison.
 
 ## Output Modes
 

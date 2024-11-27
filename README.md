@@ -31,7 +31,7 @@ What is considered a match depends on the chosen method; three methods are avail
 
 - *Heuristic comparison* (very fast)
 - *Heuristic comparison with trimming* (useful for text and video files, or any files with padding bytes at the end)
-- *Precise comparison* (slow but accurate)
+- *Precise comparison* (slow but perfectly accurate)
 
 For further processing of the results, you can choose between seven output modes:
 
@@ -43,7 +43,7 @@ For further processing of the results, you can choose between seven output modes
 - Oldest/newest duplicates
 - Only unique files
 
-There are many more options that let you control which files are ignored, which files should be compared, how the utility should handle symbolic links, and whether to look for files in subdirectories.
+There are many more options that let you control which files are ignored, which files should be compared, how accurate the heuristic comparison methods should be, how the utility should handle symbolic links, and whether to look for files in subdirectories.
 
 ## Installation
 

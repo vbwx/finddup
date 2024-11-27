@@ -10,10 +10,11 @@ _finddup() {
 		" -d -l -o -O -s -S -c -C -m -M -v -V -n"
 		" -B -T"
 		" -R -r"
+		" -2 -4 -8"
 		" -p -t -s -S"
 		" -H -L -P"
 	)
-	local shortopts="-0 -q -a -e -h -i -I -X"
+	local shortopts="-0 -q -a -e -h -x -i -I -X"
 	local longopts="--help --version"
 
 	[[ $prev == -[IX] ]] && return 0

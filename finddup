@@ -24,20 +24,22 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.10.3';
+$main::VERSION = '1.11';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
-our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h);
+our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
 
 my @dir = ();
 my %files = ();
 my %paths = ();
 my %inodes = ();
 my %dupes = ();
+my $samples = 6;
+my $sample_size = 5;
 my $found = 0;
 my $skipped = NO;
 
-getopts('dloOsSmMncCvV0RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
+getopts('dloOsSmMncCvV0x248RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
 	$opt_v + $opt_V + $opt_d + $opt_n > 1) {
 	pod2usage(-message => "Mutually exclusive options: ".($opt_c && 'c ').($opt_C && 'C ').
@@ -48,6 +50,16 @@ if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt
 if ($opt_p && ($opt_t || $opt_s || $opt_S)) {
 	pod2usage(-message => "Mutually exclusive options: p ".($opt_S && 'S ').($opt_s && 's ').
 		($opt_t && 't'), -exitval => EX_USAGE);
+}
+if ($opt_2 + $opt_4 + $opt_8 > 1) {
+	pod2usage(-message => "Mutually exclusive options: ".($opt_2 && '2 ').($opt_4 && '4 ').
+		($opt_8 && '8'), -exitval => EX_USAGE);
+}
+if ($opt_p && $opt_x) {
+	warn "Option -x has no effect when -p is specified";
+}
+if ($opt_p && ($opt_2 || $opt_4 || $opt_8)) {
+	warn "Option -".($opt_2 ? 2 : ($opt_4 ? 4 : 8))." has no effect when -p is specified";
 }
 if ($opt_B && $opt_T) {
 	pod2usage(-message => "Mutually exclusive options: B T", -exitval => EX_USAGE);
@@ -76,6 +88,18 @@ if ($opt_0) {
 }
 else {
 	$\ = "\n";
+}
+if ($opt_2) {
+	$samples *= 2;
+}
+elsif ($opt_4) {
+	$samples *= 4;
+}
+elsif ($opt_8) {
+	$samples *= 8;
+}
+if ($opt_x) {
+	$sample_size *= 3;
 }
 
 for (@ARGV) {
@@ -337,11 +361,11 @@ sub digest {
 	my ($file, $data, $hex, $s);
 	return 'x' unless $size;
 	if (open($file, '<', $path)) {
-		$s = int(($size - 30)/5); # 6 * 5B
+		$s = int(($size - $samples*$sample_size)/($samples - 1));
 		if ($s >= 0) {
-			for (0 .. 5) {
-				seek($file, $s, SEEK_CUR) if $_;
-				read($file, $data, 5) or last;
+			for (1 .. $samples) {
+				seek($file, $s, SEEK_CUR) if $_ > 1;
+				read($file, $data, $sample_size) or last;
 				$hex .= unpack('H*', $data);
 			}
 		}
@@ -372,11 +396,11 @@ sub trim_digest {
 			$size-- while seek($file, -2, SEEK_CUR) && read($file, $data, 1) && $c eq $data;
 			if ($size > 2) {
 				seek($file, $s + 1, SEEK_SET);
-				$s = int(($size - 32)/5); # 2B + 6 * 5B
+				$s = int(($size - 2 - $samples*$sample_size)/($samples - 1));
 				if ($s >= 0) {
-					for (0 .. 5) {
-						seek($file, $s, SEEK_CUR) if $_;
-						read($file, $data, 5) or last;
+					for (1 .. $samples) {
+						seek($file, $s, SEEK_CUR) if $_ > 1;
+						read($file, $data, $sample_size) or last;
 						$hex .= unpack('H*', $data);
 					}
 				}
@@ -439,7 +463,7 @@ B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 =item B<finddup>
 
 S<[B<-d> | B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
-S<[B<-aehiqr0>] [B<-p> | B<-t>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
+S<[B<-aehiqrx0>] [B<-p> | B<-t>] [B<-2> | B<-4> | B<-8>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
 S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
@@ -448,8 +472,8 @@ S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 **finddup**
 \[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
 **-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
-\[**-aehiqr0**\] \[**-p** \| **-t**\] \[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\]
-\[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+\[**-aehiqrx0**\] \[**-p** \| **-t**\] \[**-2** \| **-4** \| **-8**\] \[**-B** \| **-T**\]
+\[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 =head1 DESCRIPTION
 
@@ -461,11 +485,16 @@ What is considered a match depends on the chosen method.
 =item *
 
 By default, files are compared B<heuristically>, which means that files are
-considered duplicates if they are the same size, and if a few bytes
-of different parts of the file contents are identical to their counterparts.
+considered duplicates if they are the same size, and if a few bytes of
+different parts of the file contents (samples) are identical to their
+counterparts.
 
 This method is very fast and accurate enough for most use cases, but it
 can produce false positives (or false negatives when invoked with B<-n>).
+The number of samples that are compared can be increased with the B<-2>,
+B<-4>, and B<-8> options, which can reduce the number of false matches but
+also increase the run time. The sample size can be increased with the
+B<-x> option.
 
 =item *
 
@@ -564,12 +593,38 @@ This manual contains a L<tutorial|/TUTORIAL>.
 =item B<-p>
 
 Compare the entire contents of files.
-This is slower but only finds files that are perfect duplicates.
+This is slower but only considers files to be duplicates if they are perfect
+matches.
 
 =item B<-t>
 
 Trim repeating characters from the beginning and end of file contents
 before comparing them.
+
+=back
+
+=head2 Comparison Accuracy
+
+These options have no effect when the precise comparison method (B<-p>)
+is used.
+
+=over
+
+=item B<-2>
+
+Use twice as many samples for heuristic comparison.
+
+=item B<-4>
+
+Use four times as many samples for heuristic comparison.
+
+=item B<-8>
+
+Use eight times as many samples for heuristic comparison.
+
+=item B<-x>
+
+Use three times as many bytes per sample for heuristic comparison.
 
 =back
 
