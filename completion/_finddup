@@ -11,6 +11,7 @@ _arguments -S -s \
 	'-h[do not regard multiple hard links to the same file as duplicates]' \
 	'-i[ignore case of glob patterns]' \
 	'-q[do not print the number of duplicated or unique files]' \
+	'(-p)-x[triple the sample size]' \
 	'-0[print paths with NUL characters as separators]' \
 	'(- :)--version' \
 	'(- :)--help' \
@@ -19,10 +20,9 @@ _arguments -S -s \
 		'(-s -S)-p[compare the entire contents of files]' \
 		'-t[trim repeating characters from the beginning and end of files]' \
 	+ '(accuracy)' \
-		'-2[compare files using twice as many samples]' \
-		'-4[compare files using four times as many samples]' \
-		'-8[compare files using eight times as many samples]' \
-		'-x[triple the sample size]' \
+		'(-p)-2[compare files using twice as many samples]' \
+		'(-p)-4[compare files using four times as many samples]' \
+		'(-p)-8[compare files using eight times as many samples]' \
 	+ '(mode)' \
 		'-d[print path of each file with a list of paths of its duplicates]' \
 		'-l[print paths of each file and its duplicate on separate lines]' \
