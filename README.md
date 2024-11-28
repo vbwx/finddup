@@ -74,7 +74,7 @@ Alternatively, if you have [**cpanminus**](https://metacpan.org/pod/App::cpanmin
 
 ```sh
 cpanm --installdeps .
-perl Makefile.PL INSTALL_BASE=...
+perl Makefile.PL INSTALL_BASE=<your_install_dir>
 make
 make install
 ```
