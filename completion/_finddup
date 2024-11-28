@@ -17,7 +17,7 @@ _arguments -S -s \
 	'(- :)--help' \
 	'*:file or directory:_files' \
 	+ '(method)' \
-		'(-s -S)-p[compare the entire contents of files]' \
+		'(-s -S -2 -4 -8 -x)-p[compare the entire contents of files]' \
 		'-t[trim repeating characters from the beginning and end of files]' \
 	+ '(accuracy)' \
 		'(-p)-2[compare files using twice as many samples]' \
