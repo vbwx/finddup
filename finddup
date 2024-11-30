@@ -24,7 +24,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.11';
+$main::VERSION = '1.11.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -362,7 +362,7 @@ sub digest {
 	return 'x' unless $size;
 	if (open($file, '<', $path)) {
 		$s = int(($size - $samples*$sample_size)/($samples - 1));
-		if ($s >= 0) {
+		if ($s > 0) {
 			for (1 .. $samples) {
 				seek($file, $s, SEEK_CUR) if $_ > 1;
 				read($file, $data, $sample_size) or last;
@@ -397,7 +397,7 @@ sub trim_digest {
 			if ($size > 2) {
 				seek($file, $s + 1, SEEK_SET);
 				$s = int(($size - 2 - $samples*$sample_size)/($samples - 1));
-				if ($s >= 0) {
+				if ($s > 0) {
 					for (1 .. $samples) {
 						seek($file, $s, SEEK_CUR) if $_ > 1;
 						read($file, $data, $sample_size) or last;
