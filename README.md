@@ -31,7 +31,7 @@ What is considered a match depends on the chosen method; three methods are avail
 
 - *Heuristic comparison* (very fast)
 - *Heuristic comparison with trimming* (useful for text and video files, or any files with padding bytes at the end)
-- *Precise comparison* (slow but perfectly accurate)
+- *Precise comparison* (slow but absolutely accurate)
 
 For further processing of the results, you can choose between seven output modes:
 
