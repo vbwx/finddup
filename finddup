@@ -462,18 +462,19 @@ B<finddup> E<ndash> Finds duplicated files fast and efficiently.
 
 =item B<finddup>
 
-S<[B<-d> | B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
 S<[B<-aehiqrx0>] [B<-p> | B<-t>] [B<-2> | B<-4> | B<-8>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
+S<[B<-d> | B<-l> | B<-o> | B<-O> | B<-s> | B<-S> | B<-c> | B<-C> | B<-m> | B<-M> | B<-v> | B<-V> | B<-n>]>
 S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
 
 =for markdown -->
 **finddup**
-\[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \| **-c** \| **-C** \|
-**-m** \| **-M** \| **-v** \| **-V** \| **-n**\]
-\[**-aehiqrx0**\] \[**-p** \| **-t**\] \[**-2** \| **-4** \| **-8**\] \[**-B** \| **-T**\]
-\[**-H** \| **-L** \| **-P**\] \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+\[**-aehiqrx0**\] \[**-p** \| **-t**\] \[**-2** \| **-4** \| **-8**\]
+\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \
+&emsp;&emsp;&emsp;&emsp; \[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \|
+**-c** \| **-C** \| **-m** \| **-M** \| **-v** \| **-V** \| **-n**\] \
+&emsp;&emsp;&emsp;&emsp; \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
 
 =head1 DESCRIPTION
 
