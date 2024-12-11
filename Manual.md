@@ -267,6 +267,12 @@ This manual contains a [tutorial](#tutorial).
 
     Print version information.
 
+# NOTES
+
+The **finddup** command accepts the **-\-** option, which will cause it to stop
+processing flag options. This allows you to pass file or directory names that
+begin with a dash (`-`).
+
 # EXIT STATUS
 
 The **finddup** utility exits 0 on success, 1 if no duplicates are found,

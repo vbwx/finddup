@@ -785,6 +785,12 @@ Print version information.
 
 =back
 
+=head1 NOTES
+
+The B<finddup> command accepts the B<--> option, which will cause it to stop
+processing flag options. This allows you to pass file or directory names that
+begin with a dash (C<->).
+
 =head1 EXIT STATUS
 
 The B<finddup> utility exits 0 on success, 1 if no duplicates are found,
