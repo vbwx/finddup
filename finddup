@@ -727,6 +727,10 @@ Only compare binary files.
 
 Only compare text files.
 
+=item B<-h>
+
+Do not compare multiple hard links to the same file.
+
 =item B<-H>
 
 Follow symbolic links on the command line.
@@ -760,10 +764,6 @@ Ignore the case of glob patterns.
 =head2 Miscellaneous Options
 
 =over
-
-=item B<-h>
-
-Do not regard multiple hard links to the same file as duplicates.
 
 =item B<-q>
 

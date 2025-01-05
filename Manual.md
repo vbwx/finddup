@@ -215,6 +215,10 @@ This manual contains a [tutorial](#tutorial).
 
     Only compare text files.
 
+- **-h**
+
+    Do not compare multiple hard links to the same file.
+
 - **-H**
 
     Follow symbolic links on the command line.
@@ -244,10 +248,6 @@ This manual contains a [tutorial](#tutorial).
     Ignore the case of glob patterns.
 
 ## Miscellaneous Options
-
-- **-h**
-
-    Do not regard multiple hard links to the same file as duplicates.
 
 - **-q**
 
