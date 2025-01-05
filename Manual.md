@@ -217,7 +217,7 @@ This manual contains a [tutorial](#tutorial).
 
 - **-h**
 
-    Do not compare multiple hard links to the same file.
+    Do not compare files whose inode numbers are identical.
 
 - **-H**
 
