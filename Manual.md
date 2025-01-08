@@ -4,12 +4,9 @@
 
 # SYNOPSIS
 
-**finddup**
-\[**-aehiqrx0**\] \[**-p** \| **-t**\] \[**-2** \| **-4** \| **-8**\]
-\[**-B** \| **-T**\] \[**-H** \| **-L** \| **-P**\] \
-&emsp;&emsp;&emsp;&emsp; \[**-d** \| **-l** \| **-o** \| **-O** \| **-s** \| **-S** \|
-**-c** \| **-C** \| **-m** \| **-M** \| **-v** \| **-V** \| **-n**\] \
-&emsp;&emsp;&emsp;&emsp; \[**-I** _glob_\] \[**-X** _glob_\] \[_file_ ...\]
+    finddup [-aehiqrx0] [-p | -t] [-2 | -4 | -8] [-B | -T] [-H | -L | -P]
+            [-d | -l | -o | -O | -s | -S | -c | -C | -m | -M | -v | -V | -n]
+            [-I glob] [-X glob] [file ...]
 
 # DESCRIPTION
 
