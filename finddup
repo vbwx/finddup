@@ -9,6 +9,7 @@ use File::stat;
 use File::Spec::Functions qw(abs2rel canonpath splitpath file_name_is_absolute);
 use Cwd qw(getcwd realpath);
 use Sort::Key::Natural qw(natsort natkeysort);
+use List::Util 'reduce';
 use Text::Glob 'match_glob';
 use Fcntl ':seek';
 use subs qw(die warn);
@@ -24,7 +25,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.11.2';
+$main::VERSION = '1.12.0';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -64,6 +65,8 @@ if ($opt_p && ($opt_2 || $opt_4 || $opt_8)) {
 if ($opt_B && $opt_T) {
 	pod2usage(-message => "Mutually exclusive options: B T", -exitval => EX_USAGE);
 }
+
+my $interactive = !$opt_q && -t && -t *STDERR;
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
 $opt_c ||= $opt_C;
@@ -72,6 +75,7 @@ $opt_v ||= $opt_V;
 $opt_r ||= $opt_R;
 $opt_t ||= $opt_s;
 $Text::Glob::strict_leading_dot = NO if $opt_a;
+
 if ($opt_P) {
 	$opt_H = $opt_L = NO;
 }
@@ -236,7 +240,16 @@ find({
 
 %inodes = %paths = ();
 
+my ($comps, $total);
+if ($interactive && !$opt_t) {
+	$| = YES;
+	$comps = 0;
+	print_progress();
+}
+
 if ($opt_p) {
+	$total = reduce {my $n = @$b - 1; $a + ($n > 0 ? $n*($n + 1)/2 : 0)} (0, values %files)
+		if $interactive;
 	while (my ($s, $f) = each %files) {
 		if (@$f > 1) {
 			for my $i (0 .. $#$f-1) {
@@ -250,7 +263,12 @@ if ($opt_p) {
 							else {
 								add_dup($$f[$i], $$f[$j]);
 							}
+							$total -= $#$f - $j;
 							delete $$f[$j];
+						}
+						if ($interactive) {
+							$comps++;
+							print_progress();
 						}
 					}
 					delete $$f[$i] if $del;
@@ -259,11 +277,13 @@ if ($opt_p) {
 		}
 	}
 }
-else {
+elsif (!$opt_t) {
+	$total = reduce {$a + (@$b > 1 ? @$b : 0)} (0, values %files) if $interactive;
 	while (my ($s, $f) = each %files) {
 		if (@$f > 1) {
 			my %m = ();
 			while (each @$f) {
+				$comps++;
 				my $d = digest($$f[$_][PATH], $s) or next;
 				if (defined $m{$d}) {
 					if ($opt_n) {
@@ -276,10 +296,12 @@ else {
 				elsif ($$f[$_][COMPARE]) {
 					$m{$d} = $_;
 				}
+				print_progress() if $interactive;
 			}
 		}
 	}
 }
+print STDERR ("\r", ' ' x 37) if $interactive && !$opt_t;
 
 if ($opt_n) {
 	my @f;
@@ -425,6 +447,15 @@ sub print_info {
 	return;
 }
 
+sub print_progress {
+	state $progress = -1;
+	my $prog = ($total ? int(100*$comps/$total) : 0);
+	if ($prog > $progress) {
+		$progress = $prog;
+		printf STDERR (($comps > 0 && "\r").'Compared %3d%% of potential duplicates', $prog);
+	}
+}
+
 sub pod2usage {
 	eval 'use open qw(:locale :std)';
 	require Pod::Usage;
@@ -444,7 +475,7 @@ sub die {
 
 sub warn {
 	my ($msg) = @_;
-	say STDERR "finddup: $msg";
+	printf STDERR (($interactive && $comps > 0 && "\r")."%-37s\n", "finddup: $msg");
 	return;
 }
 
