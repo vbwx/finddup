@@ -101,6 +101,8 @@ elsif ($opt_8) {
 if ($opt_x) {
 	$sample_size *= 3;
 }
+die "Default output mode does not allow redirection" unless -t *STDOUT ||
+	$opt_o || $opt_O || $opt_d || $opt_l || $opt_s || $opt_c || $opt_m || $opt_v || $opt_n;
 
 for (@ARGV) {
 	if (-l) {
