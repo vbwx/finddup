@@ -21,16 +21,18 @@ use constant {
 	SIZE => 1,
 	COMPARE => 1,
 	TIME => 2,
-	EX_USAGE => 2
+	EX_USAGE => 2,
+	PROGRESS_LEN => 50
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.0';
+$main::VERSION = '1.12.1';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
 
 my @dir = ();
+my @files = ();
 my %files = ();
 my %paths = ();
 my %inodes = ();
@@ -66,7 +68,7 @@ if ($opt_B && $opt_T) {
 	pod2usage(-message => "Mutually exclusive options: B T", -exitval => EX_USAGE);
 }
 
-my $interactive = !$opt_q && -t && -t *STDERR;
+my $interactive = !$opt_q && -t && -t STDERR;
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
 $opt_c ||= $opt_C;
@@ -105,7 +107,7 @@ elsif ($opt_8) {
 if ($opt_x) {
 	$sample_size *= 3;
 }
-die "Default output mode does not allow redirection" unless -t *STDOUT ||
+die "Default output mode does not allow redirection" unless -t STDOUT ||
 	$opt_o || $opt_O || $opt_d || $opt_l || $opt_s || $opt_c || $opt_m || $opt_v || $opt_n;
 
 for (@ARGV) {
@@ -144,20 +146,17 @@ for (@ARGV) {
 		$stat = File::stat::populate(CORE::stat(_));
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 			if ($opt_h) {
-				warn "'".($opt_t ? $dupes{$inodes{$stat->dev}{$stat->ino}}[0][PATH] :
-					$inodes{$stat->dev}{$stat->ino}[PATH])."' and '$_' are identical";
+				warn "'".$inodes{$stat->dev}{$stat->ino}[PATH]."' and '$_' are identical";
 				next;
 			}
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
-		$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
-			my $digest = ($dup || trim_digest($_, $s)) or next;
-			push(@{$dupes{$digest}}, [$_, $s, $time]);
-			# [PATH, SIZE, TIME]
-			$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
+			push(@files, $_);
+			$inodes{$stat->dev}{$stat->ino} = [$_] if !$dup && $stat->nlink > 1; # [PATH]
 		}
 		else {
+			$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 			my $e = [$_, YES, $time];
 			# [PATH, COMPARE, TIME]
 			if ($dup) {
@@ -211,20 +210,17 @@ find({
 		$p = realpath($_);
 		return if $paths{$p};
 		$paths{$p} = YES;
-		$dup = undef;
-		$stat = stat $_;
-		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
-			return if $opt_h;
-			$dup = $inodes{$stat->dev}{$stat->ino};
-		}
-		$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		if ($opt_t) {
-			my $digest = ($dup || trim_digest($_, $s)) or return;
-			push(@{$dupes{$digest}}, [$name, $s, $time]) if $all || $dupes{$digest};
-			# [PATH, SIZE, TIME]
-			$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
+			push(@files, $name);
 		}
 		else {
+			$dup = undef;
+			$stat = stat $_;
+			if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
+				return if $opt_h;
+				$dup = $inodes{$stat->dev}{$stat->ino};
+			}
+			$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 			my $e = [$name, $all, $time];
 			# [PATH, COMPARE, TIME]
 			if ($dup) {
@@ -241,12 +237,11 @@ find({
 %inodes = %paths = ();
 
 my ($comps, $total);
-if ($interactive && !$opt_t) {
+if ($interactive) {
 	$| = YES;
 	$comps = 0;
 	print_progress();
 }
-
 if ($opt_p) {
 	$total = reduce {my $n = @$b - 1; $a + ($n > 0 ? $n*($n + 1)/2 : 0)} (0, values %files)
 		if $interactive;
@@ -263,6 +258,7 @@ if ($opt_p) {
 							else {
 								add_dup($$f[$i], $$f[$j]);
 							}
+							$found++;
 							$total -= $#$f - $i - 1;
 							delete $$f[$j];
 						}
@@ -277,7 +273,28 @@ if ($opt_p) {
 		}
 	}
 }
-elsif (!$opt_t) {
+elsif ($opt_t) {
+	%inodes = ();
+	$total = @files;
+	for (@files) {
+		my $dup = undef;
+		my $s = -s;
+		my $stat = File::stat::populate(CORE::stat(_));
+		$comps++;
+		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
+			next if $opt_h;
+			$dup = $inodes{$stat->dev}{$stat->ino};
+		}
+		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
+		my $digest = ($dup || trim_digest($_, $s)) or next;
+		$found++ if $dupes{$digest};
+		push(@{$dupes{$digest}}, [$_, $s, $time]);
+		# [PATH, SIZE, TIME]
+		$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
+		print_progress() if $interactive;
+	}
+}
+else {
 	$total = reduce {$a + (@$b > 1 ? @$b : 0)} (0, values %files) if $interactive;
 	while (my ($s, $f) = each %files) {
 		if (@$f > 1) {
@@ -292,6 +309,7 @@ elsif (!$opt_t) {
 					else {
 						add_dup($$f[$m{$d}], $$f[$_]);
 					}
+					$found++;
 				}
 				elsif ($$f[$_][COMPARE]) {
 					$m{$d} = $_;
@@ -301,7 +319,7 @@ elsif (!$opt_t) {
 		}
 	}
 }
-print STDERR ("\r", ' ' x 37) if $interactive && !$opt_t;
+print STDERR ("\r", ' ' x PROGRESS_LEN) if $interactive;
 
 if ($opt_n) {
 	my @f;
@@ -318,6 +336,7 @@ if ($opt_n) {
 	$found = scalar @f;
 }
 else {
+	$found = 0;
 	for (natkeysort {$dupes{$_}[0][PATH]} keys %dupes) {
 		my $d = $dupes{$_};
 		next unless @$d > 1;
@@ -362,7 +381,7 @@ else {
 	}
 }
 
-print_info(($found ? ($opt_d || $opt_0 ? '' : "\n").$found : 'No'),
+print_info(($found ? (-t STDOUT ? "\n" : '').$found : 'No'),
 	($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
 	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'));
 exit !$found;
@@ -449,10 +468,14 @@ sub print_info {
 
 sub print_progress {
 	state $progress = -1;
+	state $prev_found = 0;
 	my $prog = ($total ? int(100*$comps/$total) : 0);
-	if ($prog > $progress) {
+	if ($prog > $progress || $found > $prev_found) {
 		$progress = $prog;
-		printf STDERR (($comps > 0 && "\r").'Compared %3d%% of potential duplicates', $prog);
+		$prev_found = $found;
+		printf STDERR (($comps > 0 && "\r").
+			'%3d%% of files compared (%d duplicate%s found)', $prog, $found,
+			($found == 1 ? '' : 's'));
 	}
 }
 
@@ -475,7 +498,7 @@ sub die {
 
 sub warn {
 	my ($msg) = @_;
-	printf STDERR (($interactive && $comps > 0 && "\r")."%-37s\n", "finddup: $msg");
+	printf STDERR (($interactive && $comps > 0 && "\r")."%-${\PROGRESS_LEN}s\n", "finddup: $msg");
 	return;
 }
 
