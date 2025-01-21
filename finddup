@@ -533,8 +533,9 @@ one of the following equality signs: C<~~> means that the files are probably
 duplicates; C<==> indicates that the file contents are identical; C<===>
 means that their inode numbers are identical.
 
-The format of this mode might change in the future and is therefore not suited
-for automatic processing or piping.
+The format of this output mode might change in the future and is therefore not
+suited for automatic processing or piping. B<finddup> prevents output
+redirection in this mode.
 
 =item *
 
@@ -767,6 +768,7 @@ Ignore the case of glob patterns.
 =item B<-q>
 
 Do not print the number of duplicated or unique files.
+Hide the progress indicator.
 
 =item B<-0>
 

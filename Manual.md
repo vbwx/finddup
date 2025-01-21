@@ -52,8 +52,9 @@ one of the following equality signs: `~~` means that the files are probably
 duplicates; `==` indicates that the file contents are identical; `===`
 means that their inode numbers are identical.
 
-    The format of this mode might change in the future and is therefore not suited
-    for automatic processing or piping.
+    The format of this output mode might change in the future and is therefore not
+    suited for automatic processing or piping. **finddup** prevents output
+    redirection in this mode.
 
 - The **-d** option prints the path of each file along with a tab-indented list
 of the paths of its duplicates.
@@ -249,6 +250,7 @@ This manual contains a [tutorial](#tutorial).
 - **-q**
 
     Do not print the number of duplicated or unique files.
+    Hide the progress indicator.
 
 - **-0**
 
