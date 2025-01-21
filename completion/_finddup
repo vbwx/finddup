@@ -10,7 +10,7 @@ _arguments -S -s \
 	'-X+[do not compare files matching the glob pattern]:glob:_files' \
 	'-h[do not regard multiple hard links to the same file as duplicates]' \
 	'-i[ignore case of glob patterns]' \
-	'-q[do not print the number of duplicated or unique files]' \
+	'-q[hide progress indicator and number of duplicated/unique files]' \
 	'(-p)-x[triple the sample size]' \
 	'-0[print paths with NUL characters as separators]' \
 	'(- :)--version' \
