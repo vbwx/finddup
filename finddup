@@ -263,7 +263,7 @@ if ($opt_p) {
 							else {
 								add_dup($$f[$i], $$f[$j]);
 							}
-							$total -= $#$f - $j;
+							$total -= $#$f - $i - 1;
 							delete $$f[$j];
 						}
 						if ($interactive) {
