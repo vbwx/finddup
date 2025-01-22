@@ -22,11 +22,11 @@ use constant {
 	COMPARE => 1,
 	TIME => 2,
 	EX_USAGE => 2,
-	PROGRESS_LEN => 50
+	PROGRESS_LEN => 60
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.1';
+$main::VERSION = '1.12.2';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -40,6 +40,8 @@ my %dupes = ();
 my $samples = 6;
 my $sample_size = 5;
 my $found = 0;
+my $comps = 0;
+my $total;
 my $skipped = NO;
 
 getopts('dloOsSmMncCvV0x248RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
@@ -69,6 +71,7 @@ if ($opt_B && $opt_T) {
 }
 
 my $interactive = !$opt_q && -t && -t STDERR;
+$| = YES;
 $opt_T = $opt_B = YES unless $opt_T || $opt_B;
 $opt_s ||= $opt_S;
 $opt_c ||= $opt_C;
@@ -157,8 +160,7 @@ for (@ARGV) {
 		}
 		else {
 			$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
-			my $e = [$_, YES, $time];
-			# [PATH, COMPARE, TIME]
+			my $e = [$_, YES, $time]; # [PATH, COMPARE, TIME]
 			if ($dup) {
 				add_dup($dup, $e);
 			}
@@ -178,6 +180,7 @@ for (@ARGV) {
 my $CWD = getcwd();
 my $all = !$skipped && !%files && !%dupes;
 @dir = ('.') if !$skipped && !@dir && $all;
+print_traversal() if @dir;
 
 find({
 	follow => $opt_L,
@@ -211,6 +214,7 @@ find({
 		return if $paths{$p};
 		$paths{$p} = YES;
 		if ($opt_t) {
+			$found++;
 			push(@files, $name);
 		}
 		else {
@@ -221,27 +225,26 @@ find({
 				$dup = $inodes{$stat->dev}{$stat->ino};
 			}
 			$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
-			my $e = [$name, $all, $time];
-			# [PATH, COMPARE, TIME]
+			my $e = [$name, $all, $time]; # [PATH, COMPARE, TIME]
 			if ($dup) {
-				add_dup($dup, $e) if $all || $dupes{$$dup[PATH]};
+				$found++;
+				add_dup($dup, $e);
 			}
-			else {
-				push(@{$files{$s}}, $e) if $all || $files{$s};
+			elsif ($all || $files{$s}) {
+				$found++ if $files{$s};
+				push(@{$files{$s}}, $e);
 				$inodes{$stat->dev}{$stat->ino} = $e if $stat->nlink > 1;
 			}
 		}
+		print_traversal();
 	}
 }, @dir);
 
 %inodes = %paths = ();
+$found = 0;
+clear_progress() if @dir;
+print_progress();
 
-my ($comps, $total);
-if ($interactive) {
-	$| = YES;
-	$comps = 0;
-	print_progress();
-}
 if ($opt_p) {
 	$total = reduce {my $n = @$b - 1; $a + ($n > 0 ? $n*($n + 1)/2 : 0)} (0, values %files)
 		if $interactive;
@@ -262,10 +265,8 @@ if ($opt_p) {
 							$total -= $#$f - $i - 1;
 							delete $$f[$j];
 						}
-						if ($interactive) {
-							$comps++;
-							print_progress();
-						}
+						$comps++;
+						print_progress();
 					}
 					delete $$f[$i] if $del;
 				}
@@ -288,10 +289,9 @@ elsif ($opt_t) {
 		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 		my $digest = ($dup || trim_digest($_, $s)) or next;
 		$found++ if $dupes{$digest};
-		push(@{$dupes{$digest}}, [$_, $s, $time]);
-		# [PATH, SIZE, TIME]
+		push(@{$dupes{$digest}}, [$_, $s, $time]); # [PATH, SIZE, TIME]
 		$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
-		print_progress() if $interactive;
+		print_progress();
 	}
 }
 else {
@@ -314,12 +314,12 @@ else {
 				elsif ($$f[$_][COMPARE]) {
 					$m{$d} = $_;
 				}
-				print_progress() if $interactive;
+				print_progress();
 			}
 		}
 	}
 }
-print STDERR ("\r", ' ' x PROGRESS_LEN) if $interactive;
+clear_progress(YES);
 
 if ($opt_n) {
 	my @f;
@@ -466,17 +466,34 @@ sub print_info {
 	return;
 }
 
+sub print_traversal {
+	return unless $interactive;
+	state $last_found = 0;
+	state $directories = (@dir > 1 || $opt_r ? 'directories' : 'directory');
+	state $file = ($opt_t ? 'file' : 'potential duplicate');
+	if ($found > $last_found) {
+		$last_found = $found;
+		printf STDERR ("\rTraversing $directories (%d $file%s found)", $found,
+			($found == 1 ? '' : 's'));
+	}
+}
+
 sub print_progress {
+	return unless $interactive;
 	state $last_prog = -1;
 	state $last_found = 0;
 	my $prog = ($total ? int(100*$comps/$total) : 0);
 	if ($prog > $last_prog || $found > $last_found) {
 		$last_prog = $prog;
 		$last_found = $found;
-		printf STDERR (($comps > 0 && "\r").
-			'%3d%% of files compared (%d duplicate%s found)', $prog, $found,
+		printf STDERR ("\r%3d%% of files compared (%d duplicate%s found)", $prog, $found,
 			($found == 1 ? '' : 's'));
 	}
+}
+
+sub clear_progress {
+	my ($newline) = @_;
+	printf STDERR ("\r%s%s", ' ' x PROGRESS_LEN, ($newline ? "\n" : '')) if $interactive;
 }
 
 sub pod2usage {
