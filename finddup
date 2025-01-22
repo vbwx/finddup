@@ -467,12 +467,12 @@ sub print_info {
 }
 
 sub print_progress {
-	state $progress = -1;
-	state $prev_found = 0;
+	state $last_prog = -1;
+	state $last_found = 0;
 	my $prog = ($total ? int(100*$comps/$total) : 0);
-	if ($prog > $progress || $found > $prev_found) {
-		$progress = $prog;
-		$prev_found = $found;
+	if ($prog > $last_prog || $found > $last_found) {
+		$last_prog = $prog;
+		$last_found = $found;
 		printf STDERR (($comps > 0 && "\r").
 			'%3d%% of files compared (%d duplicate%s found)', $prog, $found,
 			($found == 1 ? '' : 's'));
