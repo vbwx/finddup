@@ -274,7 +274,7 @@ begin with a dash (`-`).
 
 # EXIT STATUS
 
-The **finddup** utility exits 0 on success, 1 if no duplicates are found,
+The **finddup** utility exits 0 on success, 1 if no duplicates were found,
 and greater than 0 if an error occurs.
 
 # TUTORIAL
