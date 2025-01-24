@@ -26,7 +26,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.4';
+$main::VERSION = '1.12.3';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -43,7 +43,6 @@ my $sample_size = 5;
 my $found = 0;
 my $comps = 0;
 my $total;
-my $min_size;
 my $all = YES;
 
 getopts('dloOsSmMncCvV0x248RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
@@ -146,7 +145,6 @@ for (@ARGV) {
 			warn "$_: Empty file skipped";
 			next;
 		}
-		$min_size = $s if $s < $min_size || !defined $min_size;
 		undef $dup;
 		$stat = File::stat::populate(CORE::stat(_));
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
@@ -179,7 +177,6 @@ for (@ARGV) {
 		die "$_: No such file or directory";
 	}
 }
-$min_size ||= int $opt_e;
 @dir = ('.') if !@dir && $all;
 print_traversal() if @dir;
 
@@ -196,7 +193,7 @@ find({
 			return;
 		}
 		$s = -s _;
-		return if $s < $min_size;
+		return if $opt_e && !$s;
 		$t = -T _ unless $opt_T && $opt_B;
 		return unless (!$t && $opt_B) || ($t && $opt_T);
 		if (-l) {
@@ -564,12 +561,12 @@ considered duplicates if they are the same size, and if a few bytes of
 different parts of the file contents (samples) are identical to their
 counterparts.
 
-This method is very fast and accurate enough for most use cases, but it can
-produce false positives (or false negatives when invoked with B<-n>). The
-number of samples that are compared can be increased with the B<-2>, B<-4>,
-and B<-8> options, which can reduce the number of false matches but also
-increase the run time, especially for the trim method. The sample size can be
-increased with the B<-x> option.
+This method is very fast and accurate enough for most use cases, but it
+can produce false positives (or false negatives when invoked with B<-n>).
+The number of samples that are compared can be increased with the B<-2>,
+B<-4>, and B<-8> options, which can reduce the number of false matches but
+also increase the run time. The sample size can be increased with the
+B<-x> option.
 
 =item *
 
@@ -579,7 +576,7 @@ end of file contents. This is especially useful for text files, which often
 end with blank lines, and video files, which might have a varying number of
 NUL characters at the end of their contents.
 
-However, this method is slower because it needs to open every file
+However, this method is a little slower because it needs to open every file
 to compare their contents to each other, whereas the default method only
 has to compare files of the same size.
 
