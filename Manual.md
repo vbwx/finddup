@@ -18,12 +18,12 @@ considered duplicates if they are the same size, and if a few bytes of
 different parts of the file contents (samples) are identical to their
 counterparts.
 
-    This method is very fast and accurate enough for most use cases, but it
-    can produce false positives (or false negatives when invoked with **-n**).
-    The number of samples that are compared can be increased with the **-2**,
-    **-4**, and **-8** options, which can reduce the number of false matches but
-    also increase the run time. The sample size can be increased with the
-    **-x** option.
+    This method is very fast and accurate enough for most use cases, but it can
+    produce false positives (or false negatives when invoked with **-n**). The
+    number of samples that are compared can be increased with the **-2**, **-4**,
+    and **-8** options, which can reduce the number of false matches but also
+    increase the run time, especially for the trim method. The sample size can be
+    increased with the **-x** option.
 
 - The **trim** method (**-t**) also employs heuristic comparison as
 described above, but it ignores repeating characters at the start and
@@ -31,9 +31,9 @@ end of file contents. This is especially useful for text files, which often
 end with blank lines, and video files, which might have a varying number of
 NUL characters at the end of their contents.
 
-    However, this method is a little slower because it needs to open every file
-    to compare their contents to each other, whereas the default method only
-    has to compare files of the same size.
+    However, this method is slower because it needs to open every file to compare
+    their contents to each other, whereas the default method only has to compare
+    files of the same size.
 
 - With **precise comparison** (**-p**), file contents are compared
 byte for byte, so it can be guaranteed that only perfect duplicates are found.
