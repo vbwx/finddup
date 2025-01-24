@@ -26,11 +26,12 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.2';
+$main::VERSION = '1.12.3';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
 
+my $CWD = getcwd();
 my @dir = ();
 my @files = ();
 my %files = ();
@@ -42,7 +43,7 @@ my $sample_size = 5;
 my $found = 0;
 my $comps = 0;
 my $total;
-my $skipped = NO;
+my $all = YES;
 
 getopts('dloOsSmMncCvV0x248RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
@@ -117,7 +118,7 @@ for (@ARGV) {
 	if (-l) {
 		unless ($opt_H) {
 			warn "$_: Symbolic link skipped";
-			$skipped = YES;
+			$all = NO;
 			next;
 		}
 		$_ = (file_name_is_absolute($_) ? realpath($_) : abs2rel(realpath($_)));
@@ -134,18 +135,17 @@ for (@ARGV) {
 	if (-f) {
 		my ($t, $s, $dup, $stat, $time);
 		$t = -T _ unless $opt_T && $opt_B;
+		$all = NO;
 		unless ((!$t && $opt_B) || ($t && $opt_T)) {
 			warn "$_: ".($t ? "Text" : "Binary")." file skipped";
-			$skipped = YES;
 			next;
 		}
 		$s = -s _;
 		if ($opt_e && !$s) {
 			warn "$_: Empty file skipped";
-			$skipped = YES;
 			next;
 		}
-		$dup = undef;
+		undef $dup;
 		$stat = File::stat::populate(CORE::stat(_));
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 			if ($opt_h) {
@@ -155,7 +155,7 @@ for (@ARGV) {
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
 		if ($opt_t) {
-			push(@files, $_);
+			push(@files, [$_, YES]); # [PATH, COMPARE]
 			$inodes{$stat->dev}{$stat->ino} = [$_] if !$dup && $stat->nlink > 1; # [PATH]
 		}
 		else {
@@ -177,9 +177,7 @@ for (@ARGV) {
 		die "$_: No such file or directory";
 	}
 }
-my $CWD = getcwd();
-my $all = !$skipped && !%files && !%dupes;
-@dir = ('.') if !$skipped && !@dir && $all;
+@dir = ('.') if !@dir && $all;
 print_traversal() if @dir;
 
 find({
@@ -215,10 +213,10 @@ find({
 		$paths{$p} = YES;
 		if ($opt_t) {
 			$found++;
-			push(@files, $name);
+			push(@files, [$name, $all]); # [PATH, COMPARE]
 		}
 		else {
-			$dup = undef;
+			undef $dup;
 			$stat = stat $_;
 			if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 				return if $opt_h;
@@ -278,8 +276,8 @@ elsif ($opt_t) {
 	%inodes = ();
 	$total = @files;
 	for (@files) {
-		my $dup = undef;
-		my $s = -s;
+		my $dup;
+		my $s = -s $$_[PATH];
 		my $stat = File::stat::populate(CORE::stat(_));
 		$comps++;
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
@@ -287,10 +285,13 @@ elsif ($opt_t) {
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
 		my $time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
-		my $digest = ($dup || trim_digest($_, $s)) or next;
-		$found++ if $dupes{$digest};
-		push(@{$dupes{$digest}}, [$_, $s, $time]); # [PATH, SIZE, TIME]
+		my $digest = ($dup || trim_digest($$_[PATH], $s)) or next;
+		if ($$_[COMPARE] || $dupes{$digest}) {
+			$found++ if $dupes{$digest};
+			push(@{$dupes{$digest}}, [$$_[PATH], $s, $time]); # [PATH, SIZE, TIME]
+		}
 		$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
+		undef $dup;
 		print_progress();
 	}
 }
