@@ -22,11 +22,11 @@ use constant {
 	COMPARE => 1,
 	TIME => 2,
 	EX_USAGE => 2,
-	PROGRESS_LEN => 60
+	PROGRESS_LEN => 70
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.3';
+$main::VERSION = '1.12.4';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -487,8 +487,8 @@ sub print_progress {
 	if ($prog > $last_prog || $found > $last_found) {
 		$last_prog = $prog;
 		$last_found = $found;
-		printf STDERR ("\r%3d%% of files compared (%d duplicate%s found)", $prog, $found,
-			($found == 1 ? '' : 's'));
+		printf STDERR ("\r%3d%% of %d comparison%s completed (%d duplicate%s found)", $prog,
+			$total, ($total == 1 ? '' : 's'), $found, ($found == 1 ? '' : 's'));
 	}
 }
 
@@ -516,7 +516,7 @@ sub die {
 
 sub warn {
 	my ($msg) = @_;
-	printf STDERR (($interactive && $comps > 0 && "\r")."%-${\PROGRESS_LEN}s\n", "finddup: $msg");
+	printf STDERR ("%s%-${\PROGRESS_LEN}s\n", ($interactive ? "\r" : ''), "finddup: $msg");
 	return;
 }
 
