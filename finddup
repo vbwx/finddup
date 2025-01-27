@@ -260,7 +260,7 @@ if ($opt_p) {
 								add_dup($$f[$i], $$f[$j]);
 							}
 							$found++;
-							$total -= $#$f - $i - 1;
+							$total -= $#$f - $j;
 							delete $$f[$j];
 						}
 						$comps++;
