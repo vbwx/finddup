@@ -26,7 +26,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.4';
+$main::VERSION = '1.12.5';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
