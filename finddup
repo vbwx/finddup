@@ -383,7 +383,7 @@ else {
 }
 
 print_info(($found ? (-t STDOUT ? "\n" : '').$found : 'No'),
-	($found && !$opt_n ? ($opt_p ? ' exact' : ' possible') : ''),
+	($found && !$opt_n ? ($opt_p ? ' exact' : ' probable') : ''),
 	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'));
 exit !$found;
 
