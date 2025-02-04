@@ -474,7 +474,7 @@ sub print_traversal {
 	state $file = ($opt_t ? 'file' : 'potential duplicate');
 	if ($found > $last_found) {
 		$last_found = $found;
-		printf STDERR ("\rTraversing $directories (%d $file%s found)", $found,
+		printf STDERR ("\rTraversing $directories (%d $file%s found) ", $found,
 			($found == 1 ? '' : 's'));
 	}
 }
