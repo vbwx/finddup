@@ -26,7 +26,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.6';
+$main::VERSION = '1.12.7';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -241,7 +241,6 @@ find({
 %inodes = %paths = ();
 $found = 0;
 clear_progress() if @dir;
-print_progress();
 
 if ($opt_p) {
 	$total = reduce {my $n = @$b - 1; $a + ($n > 0 ? $n*($n + 1)/2 : 0)} (0, values %files)
@@ -252,6 +251,7 @@ if ($opt_p) {
 				if ($$f[$i][COMPARE]) {
 					my $del = NO;
 					for my $j ($i+1 .. $#$f) {
+						print_progress();
 						if (defined $$f[$j][PATH] && compare($$f[$i][PATH], $$f[$j][PATH]) == 0) {
 							if ($opt_n) {
 								$del = YES;
@@ -264,7 +264,6 @@ if ($opt_p) {
 							delete $$f[$j];
 						}
 						$comps++;
-						print_progress();
 					}
 					delete $$f[$i] if $del;
 				}
@@ -276,6 +275,7 @@ elsif ($opt_t) {
 	%inodes = ();
 	$total = @files;
 	for (@files) {
+		print_progress();
 		my $dup;
 		my $s = -s $$_[PATH];
 		my $stat = File::stat::populate(CORE::stat(_));
@@ -292,7 +292,6 @@ elsif ($opt_t) {
 		}
 		$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
 		undef $dup;
-		print_progress();
 	}
 }
 else {
@@ -301,6 +300,7 @@ else {
 		if (@$f > 1) {
 			my %m = ();
 			while (each @$f) {
+				print_progress();
 				$comps++;
 				my $d = digest($$f[$_][PATH], $s) or next;
 				if (defined $m{$d}) {
@@ -315,12 +315,11 @@ else {
 				elsif ($$f[$_][COMPARE]) {
 					$m{$d} = $_;
 				}
-				print_progress();
 			}
 		}
 	}
 }
-clear_progress(YES);
+clear_progress();
 
 if ($opt_n) {
 	my @f;
@@ -480,10 +479,10 @@ sub print_traversal {
 }
 
 sub print_progress {
-	return unless $interactive;
+	return unless $interactive && $total;
 	state $last_prog = -1;
 	state $last_found = 0;
-	my $prog = ($total ? int(100*$comps/$total) : 0);
+	my $prog = int(100*$comps/$total);
 	if ($prog > $last_prog || $found > $last_found) {
 		$last_prog = $prog;
 		$last_found = $found;
@@ -493,8 +492,7 @@ sub print_progress {
 }
 
 sub clear_progress {
-	my ($newline) = @_;
-	printf STDERR ("\r%s%s", ' ' x PROGRESS_LEN, ($newline ? "\n" : '')) if $interactive;
+	printf STDERR ("\r%s%s", ' ' x PROGRESS_LEN, (defined $total ? "\n" : '')) if $interactive;
 }
 
 sub pod2usage {
