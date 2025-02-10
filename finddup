@@ -492,7 +492,7 @@ sub print_progress {
 }
 
 sub clear_progress {
-	printf STDERR ("\r%s%s", ' ' x PROGRESS_LEN, (defined $total ? "\n" : '')) if $interactive;
+	printf STDERR ("\r%*s%s", PROGRESS_LEN, '', (defined $total ? "\n" : '')) if $interactive;
 }
 
 sub pod2usage {
@@ -514,7 +514,7 @@ sub die {
 
 sub warn {
 	my ($msg) = @_;
-	printf STDERR ("%s%-${\PROGRESS_LEN}s\n", ($interactive ? "\r" : ''), "finddup: $msg");
+	printf STDERR ("%s%-*s\n", ($interactive ? "\r" : ''), PROGRESS_LEN, "finddup: $msg");
 	return;
 }
 
