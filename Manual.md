@@ -32,8 +32,8 @@ end with blank lines, and video files, which might have a varying number of
 NUL characters at the end of their contents.
 
     However, this method is slower because it needs to open every file to compare
-    their contents to each other, whereas the default method only has to compare
-    files of the same size.
+    each of their contents, whereas the default method only has to compare files
+    of the same size.
 
 - With **precise comparison** (**-p**), file contents are compared
 byte for byte, so it can be guaranteed that only perfect duplicates are found.
