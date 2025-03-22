@@ -122,11 +122,11 @@ This manual contains a [tutorial](#tutorial).
 
 - **-d**
 
-    Print path of each file with a list of paths of its duplicates.
+    Print path of each file with a tab-indented list of paths of its duplicates.
 
-    If combined with the **-0** (zero) option, each path is terminated with a NUL
-    character, while the last path in the list of duplicates is terminated with
-    two NUL characters.
+    If combined with the **-0** (zero) option, the list of duplicates is not
+    tab-indented, and each path is terminated with a NUL character; the last path
+    in the list of duplicates is terminated with two NUL characters.
 
 - **-l**
 
