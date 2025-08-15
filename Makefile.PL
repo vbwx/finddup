@@ -5,7 +5,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
 	NAME => 'finddup',
-	AUTHOR => 'Bernhard Waldbrunner <vbwx01@gmail.com>',
+	AUTHOR => 'vbwx <vbwx01@gmail.com>',
 	ABSTRACT => 'Finds duplicated files fast and efficiently',
 	VERSION_FROM => 'finddup',
 	LICENSE => 'mit',

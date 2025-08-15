@@ -389,4 +389,4 @@ tested on macOS.
 
 # AUTHORS
 
-Bernhard Waldbrunner ([github.com/vbwx](https://github.com/vbwx))
+vbwx ([github.com/vbwx](https://github.com/vbwx))
