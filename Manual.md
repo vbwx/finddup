@@ -92,8 +92,8 @@ This manual contains a [tutorial](#tutorial).
 - **-p**
 
     Compare the entire contents of files.
-    This is slower but only considers files to be duplicates if they are perfect
-    matches.
+    This is slower but makes sure that only perfectly matching files are
+    considered duplicates.
 
 - **-t**
 
