@@ -103,6 +103,12 @@ Instead of running `diff` in a loop, finddup can be used to determine which file
 finddup -rn folder-v*/
 ```
 
+The following command lists all files with multiple hard links located in the entire file hierarchy of the working directory.
+
+```sh
+findlink -rd
+```
+
 ### Manual
 
 You can find a detailed explanation of all options, a tutorial, and more technical information in the [User Manual](Manual.md).
