@@ -26,7 +26,7 @@ use constant {
 };
 
 $Getopt::Std::STANDARD_HELP_VERSION = YES;
-$main::VERSION = '1.12.7';
+$main::VERSION = '1.13';
 our ($opt_l, $opt_o, $opt_O, $opt_R, $opt_r, $opt_p, $opt_t, $opt_B, $opt_T, $opt_m, $opt_M, $opt_n);
 our ($opt_i, $opt_a, $opt_s, $opt_S, $opt_e, $opt_q, $opt_H, $opt_L, $opt_P, $opt_I, $opt_X, $opt_0);
 our ($opt_d, $opt_c, $opt_C, $opt_v, $opt_V, $opt_h, $opt_x, $opt_2, $opt_4, $opt_8);
@@ -44,8 +44,9 @@ my $found = 0;
 my $comps = 0;
 my $total;
 my $all = YES;
+my $opt_ln = $0 =~ /findlink$/;
 
-getopts('dloOsSmMncCvV0x248RrqptBTaehiHLPI:X:') or pod2usage(EX_USAGE);
+getopts('dloOn0RrqBTaeiHLPI:X:'.($opt_ln ? '' : 'cCmMsSvVhptx248')) or pod2usage(EX_USAGE);
 if ($opt_l + $opt_o + $opt_O + $opt_s + $opt_S + $opt_c + $opt_C + $opt_m + $opt_M +
 	$opt_v + $opt_V + $opt_d + $opt_n > 1) {
 	pod2usage(-message => "Mutually exclusive options: ".($opt_c && 'c ').($opt_C && 'C ').
@@ -133,20 +134,19 @@ for (@ARGV) {
 	}
 	$paths{$p} = $_;
 	if (-f) {
-		my ($t, $s, $dup, $stat, $time);
+		my ($t, $dup, $stat, $time);
 		$t = -T _ unless $opt_T && $opt_B;
 		$all = NO;
 		unless ((!$t && $opt_B) || ($t && $opt_T)) {
 			warn "$_: ".($t ? "Text" : "Binary")." file skipped";
 			next;
 		}
-		$s = -s _;
-		if ($opt_e && !$s) {
+		$stat = File::stat::populate(CORE::stat(_));
+		if ($opt_e && !$stat->size) {
 			warn "$_: Empty file skipped";
 			next;
 		}
 		undef $dup;
-		$stat = File::stat::populate(CORE::stat(_));
 		if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 			if ($opt_h) {
 				warn "'".$inodes{$stat->dev}{$stat->ino}[PATH]."' and '$_' are identical";
@@ -155,6 +155,7 @@ for (@ARGV) {
 			$dup = $inodes{$stat->dev}{$stat->ino};
 		}
 		if ($opt_t) {
+			$found++;
 			push(@files, [$_, YES]); # [PATH, COMPARE]
 			$inodes{$stat->dev}{$stat->ino} = [$_] if !$dup && $stat->nlink > 1; # [PATH]
 		}
@@ -162,10 +163,12 @@ for (@ARGV) {
 			$time = ($opt_m ? $stat->mtime : ($opt_c ? $stat->ctime : ($opt_v ? $stat->atime : '')));
 			my $e = [$_, YES, $time]; # [PATH, COMPARE, TIME]
 			if ($dup) {
+				$found++;
 				add_dup($dup, $e);
 			}
 			else {
-				push(@{$files{$s}}, $e);
+				$found++ if $files{$stat->size} && !$opt_ln;
+				push(@{$files{$stat->size}}, $e);
 				$inodes{$stat->dev}{$stat->ino} = $e if $stat->nlink > 1;
 			}
 		}
@@ -185,15 +188,15 @@ find({
 	follow_skip => 2,
 	preprocess => sub {natsort(@_)},
 	wanted => sub {
-		my ($f, $p, $s, $t, $name, $dup, $stat, $time);
+		my ($f, $p, $t, $name, $dup, $stat, $time);
 		$f = ($opt_i ? fc : $_);
 		if (!-f || (!$opt_a && /^[.~]|\r$|^Thumbs\.db$/) ||
 			($opt_X && match_glob($opt_X, $f)) || ($opt_I && !match_glob($opt_I, $f))) {
 			$File::Find::prune = YES unless $opt_r || $_ eq '.';
 			return;
 		}
-		$s = -s _;
-		return if $opt_e && !$s;
+		$stat = File::stat::populate(CORE::stat(_));
+		return if $opt_e && !$stat->size;
 		$t = -T _ unless $opt_T && $opt_B;
 		return unless (!$t && $opt_B) || ($t && $opt_T);
 		if (-l) {
@@ -216,8 +219,6 @@ find({
 			push(@files, [$name, $all]); # [PATH, COMPARE]
 		}
 		else {
-			undef $dup;
-			$stat = stat $_;
 			if ($stat->nlink > 1 && $inodes{$stat->dev}{$stat->ino}) {
 				return if $opt_h;
 				$dup = $inodes{$stat->dev}{$stat->ino};
@@ -228,9 +229,9 @@ find({
 				$found++;
 				add_dup($dup, $e);
 			}
-			elsif ($all || $files{$s}) {
-				$found++ if $files{$s};
-				push(@{$files{$s}}, $e);
+			elsif ($all || $files{$stat->size}) {
+				$found++ if $files{$stat->size} && !$opt_ln;
+				push(@{$files{$stat->size}}, $e);
 				$inodes{$stat->dev}{$stat->ino} = $e if $stat->nlink > 1;
 			}
 		}
@@ -293,6 +294,9 @@ elsif ($opt_t) {
 		$inodes{$stat->dev}{$stat->ino} = $digest if !$dup && $stat->nlink > 1;
 		undef $dup;
 	}
+}
+elsif ($opt_ln) {
+	$total = 0;
 }
 else {
 	$total = reduce {$a + (@$b > 1 ? @$b : 0)} (0, values %files) if $interactive;
@@ -369,6 +373,9 @@ else {
 			print(($opt_0 ? '' : "\t").$$d[$_][PATH]) for 1 .. $#$d;
 			print '';
 		}
+		elsif ($opt_ln) {
+			print $$d[$_][PATH].' === '.$$d[0][PATH] for 1 .. $#$d;
+		}
 		else {
 			my $stat0 = stat $$d[0][PATH];
 			for (1 .. $#$d) {
@@ -382,8 +389,9 @@ else {
 }
 
 print_info(($found ? (-t STDOUT ? "\n" : '').$found : 'No'),
-	($found && !$opt_n ? ($opt_p ? ' exact' : ' probable') : ''),
-	($opt_n ? ' unique file' : ' duplicate'), ($found == 1 ? '' : 's'));
+	($found && !$opt_n && !$opt_ln ? ($opt_p ? ' exact' : ' probable') : ''),
+	($opt_ln ? ($opt_n ? ' unique' : ' identical').' hard link' : ($opt_n ? ' unique file' : ' duplicate')),
+	($found == 1 ? '' : 's'));
 exit !$found;
 
 
@@ -470,7 +478,7 @@ sub print_traversal {
 	return unless $interactive;
 	state $last_found = -1;
 	state $directories = (@dir > 1 || $opt_r ? 'directories' : 'directory');
-	state $file = ($opt_t ? 'file' : 'potential duplicate');
+	state $file = ($opt_t ? 'file' : ($opt_ln ? 'identical hard link' : 'potential duplicate'));
 	if ($found > $last_found) {
 		$last_found = $found;
 		printf STDERR ("\rTraversing $directories (%d $file%s found) ", $found,
@@ -482,7 +490,7 @@ sub print_progress {
 	return unless $interactive && $total;
 	state $last_prog = -1;
 	state $last_found = 0;
-	my $prog = int(100*$comps/$total);
+	my $prog = int(100 * $comps/$total);
 	if ($prog > $last_prog || $found > $last_found) {
 		$last_prog = $prog;
 		$last_found = $found;
