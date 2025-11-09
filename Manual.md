@@ -8,6 +8,9 @@
             [-d | -l | -o | -O | -s | -S | -c | -C | -m | -M | -v | -V | -n]
             [-I glob] [-X glob] [file ...]
 
+    findlink [-aeiqr0] [-B | -T] [-H | -L | -P] [-d | -l | -o | -O | -n]
+             [-I glob] [-X glob] [file ...]
+
 # DESCRIPTION
 
 This utility compares the contents of files to check if any of them match.
@@ -41,6 +44,8 @@ byte for byte, so it can be guaranteed that only perfect duplicates are found.
     This method is the slowest one unless all files are different sizes, in which
     case it is actually faster than the trim method.
 
+- **findlink** finds files whose _inode_ numbers are identical.
+
 Note that multiple hard links to the same file are considered duplicates
 unless the **-h** option is specified.
 
@@ -50,7 +55,7 @@ processing of the results.
 - By default, duplicates and their originals are shown in pairs, separated by
 one of the following equality signs: `~~` means that the files are probably
 duplicates; `==` indicates that the file contents are identical; `===`
-means that their inode numbers are identical.
+means that their _inode_ numbers are identical.
 
     The format of this output mode might change in the future and is therefore not
     suited for automatic processing or piping. **finddup** prevents output
@@ -67,7 +72,7 @@ to have duplicates.
 respectively. Since this only makes sense when used with the **trim** method,
 these options automatically activate it.
 - The **-m** and **-M** options print the least and most recently modified
-duplicates, respectively. **-c** and **-C** do the same but they look at inode
+duplicates, respectively. **-c** and **-C** do the same but they look at _inode_
 change time, whereas **-v** and **-V** look at access time.
 - The **-n** option negates the results, meaning that only the paths of files
 that do not have duplicates are printed.
@@ -158,12 +163,12 @@ This manual contains a [tutorial](#tutorial).
 
 - **-c**
 
-    Only print paths of files whose inode change time is older than
+    Only print paths of files whose _inode_ change time is older than
     or equal to the time of their respective duplicates.
 
 - **-C**
 
-    Only print paths of files whose inode change time is newer than
+    Only print paths of files whose _inode_ change time is newer than
     or equal to the time of their respective duplicates.
 
 - **-m**
@@ -190,6 +195,10 @@ This manual contains a [tutorial](#tutorial).
 
     Only print paths of files that have no duplicates.
 
+    When invoked as **findlink**, print paths of files whose _inode_
+    numbers are unique (among the specified files or the files within
+    the traversed directories).
+
 ## Directory Traversal Options
 
 - **-a**
@@ -215,7 +224,7 @@ This manual contains a [tutorial](#tutorial).
 
 - **-h**
 
-    Do not compare files whose inode numbers are identical.
+    Do not compare files whose _inode_ numbers are identical.
 
 - **-H**
 

@@ -540,10 +540,24 @@ S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
 
 =back
 
+=over 9
+
+=item B<findlink>
+
+S<[B<-aeiqr0>] [B<-B> | B<-T>] [B<-H> | B<-L> | B<-P>]>
+S<[B<-d> | B<-l> | B<-o> | B<-O> | B<-n>]>
+S<[B<-I> I<glob>] [B<-X> I<glob>] [I<file> ...]>
+
+=back
+
 =for markdown -->
     finddup [-aehiqrx0] [-p | -t] [-2 | -4 | -8] [-B | -T] [-H | -L | -P]
             [-d | -l | -o | -O | -s | -S | -c | -C | -m | -M | -v | -V | -n]
             [-I glob] [-X glob] [file ...]
+
+=for markdown
+    findlink [-aeiqr0] [-B | -T] [-H | -L | -P] [-d | -l | -o | -O | -n]
+             [-I glob] [-X glob] [file ...]
 
 =head1 DESCRIPTION
 
@@ -586,6 +600,10 @@ byte for byte, so it can be guaranteed that only perfect duplicates are found.
 This method is the slowest one unless all files are different sizes, in which
 case it is actually faster than the trim method.
 
+=item *
+
+B<findlink> finds files whose I<inode> numbers are identical.
+
 =back
 
 Note that multiple hard links to the same file are considered duplicates
@@ -601,7 +619,7 @@ processing of the results.
 By default, duplicates and their originals are shown in pairs, separated by
 one of the following equality signs: C<~~> means that the files are probably
 duplicates; C<==> indicates that the file contents are identical; C<===>
-means that their inode numbers are identical.
+means that their I<inode> numbers are identical.
 
 The format of this output mode might change in the future and is therefore not
 suited for automatic processing or piping. B<finddup> prevents output
@@ -632,7 +650,7 @@ these options automatically activate it.
 =item *
 
 The B<-m> and B<-M> options print the least and most recently modified
-duplicates, respectively. B<-c> and B<-C> do the same but they look at inode
+duplicates, respectively. B<-c> and B<-C> do the same but they look at I<inode>
 change time, whereas B<-v> and B<-V> look at access time.
 
 =item *
@@ -738,12 +756,12 @@ Implies B<-t>.
 
 =item B<-c>
 
-Only print paths of files whose inode change time is older than
+Only print paths of files whose I<inode> change time is older than
 or equal to the time of their respective duplicates.
 
 =item B<-C>
 
-Only print paths of files whose inode change time is newer than
+Only print paths of files whose I<inode> change time is newer than
 or equal to the time of their respective duplicates.
 
 =item B<-m>
@@ -769,6 +787,10 @@ or equal to the time of their respective duplicates.
 =item B<-n>
 
 Only print paths of files that have no duplicates.
+
+When invoked as B<findlink>, print paths of files whose I<inode>
+numbers are unique (among the specified files or the files within
+the traversed directories).
 
 =back
 
@@ -799,7 +821,7 @@ Only compare text files.
 
 =item B<-h>
 
-Do not compare files whose inode numbers are identical.
+Do not compare files whose I<inode> numbers are identical.
 
 =item B<-H>
 
