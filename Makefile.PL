@@ -13,7 +13,7 @@ WriteMakefile(
 		'Text::Glob' => '0.11',
 		'Sort::Key' => '1.33',
 	},
-	EXE_FILES => ['finddup'],
+	EXE_FILES => ['finddup', 'findlink'],
 	META_MERGE => {
 		'meta-spec' => {version => 2},
 		resources => {
