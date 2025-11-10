@@ -26,7 +26,7 @@
 
 ## Description
 
-finddup is a command-line utility which compares the contents of files to check if any of them match.
+finddup is a command-line utility that compares the contents of files to check if any of them match.
 What is considered a match depends on the chosen method; three methods are available:
 
 - *Heuristic comparison* (very fast)
@@ -44,6 +44,8 @@ For further processing of the results, you can choose between seven output modes
 - Only unique files
 
 There are many more options that let you control which files are ignored, which files should be compared, how accurate the heuristic comparison methods should be, how the utility should handle symbolic links, and whether to look for files in subdirectories.
+
+findlink is a command-line utility that compares the *inode* numbers of hard links to check if they point to the same file. It accepts most of the options accepted by finddup.
 
 ## Installation
 
