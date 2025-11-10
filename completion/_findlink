@@ -1,0 +1,29 @@
+#compdef findlink
+
+# Completion function for zsh
+
+_arguments -S -s \
+	'-a[compare all files (including hidden files)]' \
+	'-e[ignore empty files]' \
+	'(-r -R)'{-r,-R}'[look for hard links in subdirectories as well]' \
+	'-I+[only compare files matching the glob pattern]:glob:_files' \
+	'-X+[do not compare files matching the glob pattern]:glob:_files' \
+	'-i[ignore case of glob patterns]' \
+	'-q[hide progress indicator and number of identical hard links]' \
+	'-0[print paths with NUL characters as separators]' \
+	'(- :)--version' \
+	'(- :)--help' \
+	'*:file or directory:_files' \
+	+ '(mode)' \
+		'-d[print path of each file with a list of paths of its hard links]' \
+		'-l[print paths of each file and its other hard link on separate lines]' \
+		'-o[only print paths of identical hard links]' \
+		'-O[only print paths of files that have other hard links]' \
+		'-n[only print paths of files that have no other hard links]' \
+	+ '(symlinks)' \
+		'-H[follow symbolic links on the command line]' \
+		'-L[follow all symbolic links]' \
+		'-P[do not follow symbolic links]' \
+	+ '(filetype)' \
+		'-B[only compare binary files]' \
+		'-T[only compare text files]' \

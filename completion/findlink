@@ -1,0 +1,30 @@
+# bash completion for findlink
+
+have findlink &&
+_findlink() {
+	local cur prev opt
+	COMPREPLY=()
+	_get_comp_words_by_ref cur prev
+
+	local optgroups=(
+		" -d -l -o -O -n"
+		" -B -T"
+		" -R -r"
+		" -H -L -P"
+	)
+	local shortopts="-0 -q -a -e -i -I -X"
+	local longopts="--help --version"
+
+	[[ $prev == -[IX] ]] && return 0
+	case $cur in
+		(--*)
+			COMPREPLY=($(compgen -W "$longopts" -- "$cur"));;
+		(-*)
+			for opt in "${optgroups[@]}"; do
+				[[ $COMP_LINE =~ [[:space:]]-[a-zA-Z0]*[${opt// -/}][a-zA-Z0]*[[:space:]] ]] ||
+					shortopts+=$opt
+			done
+			COMPREPLY=($(compgen -W "$shortopts $longopts" -- "$cur"));;
+	esac
+} &&
+complete -o bashdefault -o default -F _findlink findlink
