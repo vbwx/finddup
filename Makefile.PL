@@ -13,7 +13,7 @@ WriteMakefile(
 		'Text::Glob' => '0.11',
 		'Sort::Key' => '1.33',
 	},
-	EXE_FILES => ['finddup', 'findlink'],
+	EXE_FILES => ['finddup'],
 	META_MERGE => {
 		'meta-spec' => {version => 2},
 		resources => {
@@ -31,8 +31,8 @@ WriteMakefile(
 sub MY::postamble {
 	local $/;
 	my $mk = '';
-	for (qw(lint.mk manual.mk)) {
-		open(my $f, '<:unix', "include/$_");
+	for (<include/*.mk>) {
+		open(my $f, '<:unix', $_);
 		$mk .= <$f>;
 		close $f;
 	}
