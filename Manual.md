@@ -13,7 +13,7 @@
 
 # DESCRIPTION
 
-This utility compares the contents of files to check if any of them match.
+**finddup** compares the contents of files to check if any of them match.
 What is considered a match depends on the chosen method.
 
 - By default, files are compared **heuristically**, which means that files are
@@ -44,13 +44,14 @@ byte for byte, so it can be guaranteed that only perfect duplicates are found.
     This method is the slowest one unless all files are different sizes, in which
     case it is actually faster than the trim method.
 
-- **findlink** finds files whose _inode_ numbers are identical.
-
 Note that multiple hard links to the same file are considered duplicates
 unless the **-h** option is specified.
 
-There are various output modes that are mostly useful for subsequent
-processing of the results.
+**findlink**, on the other hand, finds hard links to files whose _inode_
+numbers are identical.
+
+For both utilities, there are various output modes that are mostly useful
+for subsequent processing of the results.
 
 - By default, duplicates and their originals are shown in pairs, separated by
 one of the following equality signs: `~~` means that the files are probably
@@ -58,8 +59,8 @@ duplicates; `==` indicates that the file contents are identical; `===`
 means that their _inode_ numbers are identical.
 
     The format of this output mode might change in the future and is therefore not
-    suited for automatic processing or piping. **finddup** prevents output
-    redirection in this mode.
+    suited for automatic processing or piping. **finddup** and **findlink** prevent
+    output redirection in this mode.
 
 - The **-d** option prints the path of each file along with a tab-indented list
 of the paths of its duplicates.
@@ -75,18 +76,19 @@ these options automatically activate it.
 duplicates, respectively. **-c** and **-C** do the same but they look at _inode_
 change time, whereas **-v** and **-V** look at access time.
 - The **-n** option negates the results, meaning that only the paths of files
-that do not have duplicates are printed.
+that do not have duplicates or multiple hard links are printed.
 
-As for non-option arguments, **finddup** differentiates between files and
+As for non-option arguments, these utilities differentiate between files and
 directories; files passed as arguments are checked and compared first, and
 directories are traversed after. Hence, while it does not matter whether
 files or directories appear first on the command line, the order of multiple
 files and the order of multiple directories might affect the results,
 depending on the output mode.
 
-When invoked without non-option arguments, **finddup** looks for duplicates
-in the working directory. When files are passed as arguments, **finddup**
-only looks for duplicates of these files.
+When invoked without non-option arguments, these utilities look for duplicates
+or identical hard links in the working directory. When files are passed as
+arguments, they only look for duplicates or identical hard links of these
+files.
 
 This manual contains a [tutorial](#tutorial).
 
@@ -258,7 +260,7 @@ This manual contains a [tutorial](#tutorial).
 
 - **-q**
 
-    Do not print the number of duplicated or unique files.
+    Do not print the number of duplicated/unique files or identical hard links.
     Hide the progress indicator.
 
 - **-0**
@@ -277,20 +279,20 @@ This manual contains a [tutorial](#tutorial).
 
 # NOTES
 
-The **finddup** command accepts the **-\-** option, which will cause it to stop
-processing flag options. This allows you to pass file or directory names that
-begin with a dash (`-`).
+The **finddup** and **findlink** utilities accept the **-\-** option, which will
+cause them to stop processing flag options. This allows you to pass file or
+directory names that begin with a dash (`-`).
 
 # EXIT STATUS
 
-The **finddup** utility exits 0 on success, 1 if no duplicates were found,
+These utilities exit 0 on success, 1 if no duplicates were found,
 and greater than 0 if an error occurs.
 
 # TUTORIAL
 
 For all of these examples you should bear in mind that, unless **-p** is
-specified, this utility might identify duplicates that are not, in fact,
-identical but you have to trade off precision against speed of operation.
+specified, **finddup** might identify duplicates that are not, in fact,
+perfect copies but it will do so much faster than with precise comparison.
 
 In this tutorial, the words _duplicates_ and _copies_ are used
 interchangeably.
@@ -387,14 +389,29 @@ all JPEG files except the ones whose filenames contain `_thumb`.
 Consult the documentation of [Text::Glob](https://metacpan.org/pod/Text%3A%3AGlob) for a detailed explanation of
 pattern syntax.
 
+## Finding Identical Hard Links
+
+You can find all files that have multiple hard links pointing to them. This
+command prints the path to each file along with a list of the file's other hard
+links.
+
+    findlink -rd dir
+
+Since hard links to the same _inode_ are all identical, there cannot be an
+original hard link, so **findlink** interprets the first file path it sees
+as the original.
+
 # CAVEATS
 
 Although **finddup** should work on any platform, it has so far only been
 tested on macOS.
 
+**findlink** does not work on file systems that don't support hard links, such
+as FAT.
+
 # SEE ALSO
 
-[diff(1)](http://man.he.net/man1/diff), [xargs(1)](http://man.he.net/man1/xargs), [File::Compare](https://metacpan.org/pod/File%3A%3ACompare), [Text::Glob](https://metacpan.org/pod/Text%3A%3AGlob)
+[diff(1)](http://man.he.net/man1/diff), [ln(1)](http://man.he.net/man1/ln), [xargs(1)](http://man.he.net/man1/xargs), [File::Compare](https://metacpan.org/pod/File%3A%3ACompare), [Text::Glob](https://metacpan.org/pod/Text%3A%3AGlob)
 
 # AUTHORS
 
