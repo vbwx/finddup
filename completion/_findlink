@@ -15,11 +15,11 @@ _arguments -S -s \
 	'(- :)--help' \
 	'*:file or directory:_files' \
 	+ '(mode)' \
-		'-d[print path of each file with a list of paths of its hard links]' \
-		'-l[print paths of each file and its other hard link on separate lines]' \
-		'-o[only print paths of identical hard links]' \
-		'-O[only print paths of files that have other hard links]' \
-		'-n[only print paths of files that have no other hard links]' \
+		'-d[print path of each file with a list of its identical hard links]' \
+		'-l[print path of each file and its identical hard link on separate lines]' \
+		'-o[only print identical hard links]' \
+		'-O[only print paths of files that have identical hard links]' \
+		'-n[only print paths of files that have no identical hard links]' \
 	+ '(symlinks)' \
 		'-H[follow symbolic links on the command line]' \
 		'-L[follow all symbolic links]' \
