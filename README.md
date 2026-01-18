@@ -93,6 +93,12 @@ The following command calculates how much storage is taken up by duplicates in t
 finddup -ra0 | xargs -0 du -ch --
 ```
 
+Compare file information of duplicates that could be of different sizes:
+
+```sh
+finddup -tl0 | xargs -0 -n2 ls -l --
+```
+
 Here is how to delete the newest exact copies of files located in different directories (a.k.a. keep only the originals):
 
 ```sh
